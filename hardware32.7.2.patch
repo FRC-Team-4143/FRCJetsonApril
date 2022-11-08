@@ -1,0 +1,1475 @@
+diff -rupN tx2nxorig/hardware/nvidia/platform/t18x/lanai/kernel-dts/common/tegra186-camera-lanai-rbpcv2-ov9281.dtsi tx2nx/hardware/nvidia/platform/t18x/lanai/kernel-dts/common/tegra186-camera-lanai-rbpcv2-ov9281.dtsi
+--- tx2nxorig/hardware/nvidia/platform/t18x/lanai/kernel-dts/common/tegra186-camera-lanai-rbpcv2-ov9281.dtsi	1969-12-31 18:00:00.000000000 -0600
++++ tx2nx/hardware/nvidia/platform/t18x/lanai/kernel-dts/common/tegra186-camera-lanai-rbpcv2-ov9281.dtsi	2022-10-22 23:53:56.871742929 -0500
+@@ -0,0 +1,57 @@
++/*
++ * Copyright (c) 2018-2020, NVIDIA CORPORATION.  All rights reserved.
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License as published by
++ * the Free Software Foundation; either version 2 of the License, or
++ * (at your option) any later version.
++ *
++ * This program is distributed in the hope that it will be useful, but WITHOUT
++ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
++ * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
++ * more details.
++ *
++ * You should have received a copy of the GNU General Public License
++ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
++ */
++
++#include "tegra186-camera-rbpcv2-ov9281.dtsi"
++
++#define CAM0_PWDN	TEGRA_MAIN_GPIO(N, 0)
++#define CAM1_PWDN	TEGRA_MAIN_GPIO(N, 3)
++#define CAM_I2C_MUX 	TEGRA_MAIN_GPIO(C, 4)
++
++/ {
++	cam_i2cmux{
++		compatible = "i2c-mux-gpio";
++		#address-cells = <1>;
++		#size-cells = <0>;
++		i2c-parent = <&cam_i2c>;
++		mux-gpios = <&tegra_main_gpio CAM_I2C_MUX GPIO_ACTIVE_HIGH>;
++		i2c@0 {
++			reg = <0>;
++			#address-cells = <1>;
++			#size-cells = <0>;
++			rbpcv2_ov9281_a@60 {
++				reset-gpios = <&tegra_main_gpio CAM0_PWDN GPIO_ACTIVE_HIGH>;
++			};
++		};
++		i2c@1 {
++			reg = <1>;
++			#address-cells = <1>;
++			#size-cells = <0>;
++			rbpcv2_ov9281_c@60 {
++				reset-gpios = <&tegra_main_gpio CAM1_PWDN GPIO_ACTIVE_HIGH>;
++			};
++		};
++	};
++
++	gpio@2200000 {
++		camera-control-output-low {
++			gpio-hog;
++			output-low;
++			gpios = <CAM0_PWDN 0 CAM1_PWDN 0>;
++			label = "cam0-pwdn","cam1-pwdn";
++		};
++	};
++};
+diff -rupN tx2nxorig/hardware/nvidia/platform/t18x/lanai/kernel-dts/common/tegra186-camera-rbpcv2-imx219.dtsi tx2nx/hardware/nvidia/platform/t18x/lanai/kernel-dts/common/tegra186-camera-rbpcv2-imx219.dtsi
+--- tx2nxorig/hardware/nvidia/platform/t18x/lanai/kernel-dts/common/tegra186-camera-rbpcv2-imx219.dtsi	2022-02-16 00:20:03.000000000 -0600
++++ tx2nx/hardware/nvidia/platform/t18x/lanai/kernel-dts/common/tegra186-camera-rbpcv2-imx219.dtsi	2022-09-20 14:58:32.878246568 -0500
+@@ -201,6 +201,7 @@
+ 
+ 					active_w = "3264";
+ 					active_h = "2464";
++					//pixel_t = "bayer_rggb10";
+ 					pixel_t = "bayer_rggb";
+ 					readout_orientation = "90";
+ 					line_length = "3448";
+@@ -239,6 +240,7 @@
+ 
+ 					active_w = "3264";
+ 					active_h = "1848";
++					//pixel_t = "bayer_rggb10";
+ 					pixel_t = "bayer_rggb";
+ 					readout_orientation = "90";
+ 					line_length = "3448";
+@@ -277,6 +279,7 @@
+ 
+ 					active_w = "1920";
+ 					active_h = "1080";
++					//pixel_t = "bayer_rggb10";
+ 					pixel_t = "bayer_rggb";
+ 					readout_orientation = "90";
+ 					line_length = "3448";
+@@ -316,6 +319,7 @@
+ 
+ 					active_w = "1640";
+ 					active_h = "1232";
++					//pixel_t = "bayer_rggb10";
+ 					pixel_t = "bayer_rggb";
+ 					readout_orientation = "90";
+ 					line_length = "3448";
+@@ -344,7 +348,7 @@
+ 					embedded_metadata_height = "2";
+ 				};
+ 
+-				mode4 { /* IMX219_MODE_1280x720_60FPS */
++				mode4 /* { // IMX219_MODE_1280x720_60FPS
+ 					mclk_khz = "24000";
+ 					num_lanes = "2";
+ 					tegra_sinterface = "serial_a";
+@@ -355,6 +359,7 @@
+ 
+ 					active_w = "1280";
+ 					active_h = "720";
++					//pixel_t = "bayer_rggb10";
+ 					pixel_t = "bayer_rggb";
+ 					readout_orientation = "90";
+ 					line_length = "3448";
+@@ -365,63 +370,62 @@
+ 					gain_factor = "16";
+ 					framerate_factor = "1000000";
+ 					exposure_factor = "1000000";
+-					min_gain_val = "16"; /* 1.00x */
+-					max_gain_val = "170"; /* 10.66x */
++					min_gain_val = "16"; // 1.00x 
++					max_gain_val = "170"; // 10.66x 
+ 					step_gain_val = "1";
+-					default_gain = "16"; /* 1.00x */
++					default_gain = "16"; // 1.00x 
+ 					min_hdr_ratio = "1";
+ 					max_hdr_ratio = "1";
+-					min_framerate = "2000000"; /* 2.0 fps */
+-					max_framerate = "60000000"; /* 60.0 fps */
++					min_framerate = "2000000"; // 2.0 fps 
++					max_framerate = "60000000"; // 60.0 fps 
+ 					step_framerate = "1";
+-					default_framerate = "60000000"; /* 60.0 fps */
+-					min_exp_time = "13"; /* us */
+-					max_exp_time = "683709"; /* us */
++					default_framerate = "60000000"; // 60.0 fps 
++					min_exp_time = "13"; // us 
++					max_exp_time = "683709"; // us 
+ 					step_exp_time = "1";
+-					default_exp_time = "2495"; /* us */
++					default_exp_time = "2495"; // us
+ 
+ 					embedded_metadata_height = "2";
+ 				};
+-				/*
+-				*mode5 {  IMX219_MODE_1280x720_120FPS
+-					* mclk_khz = "24000";
+-					* num_lanes = "2";
+-					* tegra_sinterface = "serial_a";
+-					* phy_mode = "DPHY";
+-					* discontinuous_clk = "yes";
+-					* dpcm_enable = "false";
+-					* cil_settletime = "0";
+-
+-					* active_w = "1280";
+-					* active_h = "720";
+-					* pixel_t = "bayer_rggb";
+-					* readout_orientation = "90";
+-					* line_length = "3560";
+-					* inherent_gain = "1";
+-					* mclk_multiplier = "9.33";
+-					* pix_clk_hz = "169600000";
+-
+-					* gain_factor = "16";
+-					* framerate_factor = "1000000";
+-					* exposure_factor = "1000000";
+-					* min_gain_val = "16"; // 1.00x
+-					* max_gain_val = "170"; // 10.66x
+-					* step_gain_val = "1";
+-					* default_gain = "16"; // 1.00x
+-					* min_hdr_ratio = "1";
+-					* max_hdr_ratio = "1";
+-					* min_framerate = "2000000"; // 2.0 fps
+-					* max_framerate = "120000000"; // 120.0 fps
+-					* step_framerate = "1";
+-					* default_framerate = "120000000"; // 120.0 fps
+-					* min_exp_time = "13"; // us
+-					* max_exp_time = "683709"; // us
+-					* step_exp_time = "1";
+-					* default_exp_time = "2495"; // us
++				mode5 */ {  /* IMX219_MODE_1280x720_120FPS */
++					 mclk_khz = "24000";
++					 num_lanes = "2";
++					 tegra_sinterface = "serial_a";
++					 phy_mode = "DPHY";
++					 discontinuous_clk = "yes";
++					 dpcm_enable = "false";
++					 cil_settletime = "0";
++
++					 active_w = "1280";
++					 active_h = "720";
++					 //pixel_t = "bayer_rggb10";
++					 pixel_t = "bayer_rggb";
++					 readout_orientation = "90";
++					 line_length = "3560";
++					 inherent_gain = "1";
++					 mclk_multiplier = "9.33";
++					 pix_clk_hz = "169600000";
++
++					 gain_factor = "16";
++					 framerate_factor = "1000000";
++					 exposure_factor = "1000000";
++					 min_gain_val = "16"; // 1.00x
++					 max_gain_val = "170"; // 10.66x
++					 step_gain_val = "1";
++					 default_gain = "16"; // 1.00x
++					 min_hdr_ratio = "1";
++					 max_hdr_ratio = "1";
++					 min_framerate = "2000000"; // 2.0 fps
++					 max_framerate = "120000000"; // 120.0 fps
++					 step_framerate = "1";
++					 default_framerate = "120000000"; // 120.0 fps
++					 min_exp_time = "13"; // us
++					 max_exp_time = "683709"; // us
++					 step_exp_time = "1";
++					 default_exp_time = "2495"; // us
+ 
+-					* embedded_metadata_height = "2";
+-				*};
+-				*/
++					 embedded_metadata_height = "2";
++				};
+ 
+ 				ports {
+ 					#address-cells = <1>;
+@@ -546,6 +550,7 @@
+ 
+ 					active_w = "3264";
+ 					active_h = "2464";
++					//pixel_t = "bayer_rggb10";
+ 					pixel_t = "bayer_rggb";
+ 					readout_orientation = "90";
+ 					line_length = "3448";
+@@ -584,6 +589,7 @@
+ 
+ 					active_w = "3264";
+ 					active_h = "1848";
++					//pixel_t = "bayer_rggb10";
+ 					pixel_t = "bayer_rggb";
+ 					readout_orientation = "90";
+ 					line_length = "3448";
+@@ -622,6 +628,7 @@
+ 
+ 					active_w = "1920";
+ 					active_h = "1080";
++					//pixel_t = "bayer_rggb10";
+ 					pixel_t = "bayer_rggb";
+ 					readout_orientation = "90";
+ 					line_length = "3448";
+@@ -660,6 +667,7 @@
+ 
+ 					active_w = "1640";
+ 					active_h = "1232";
++					//pixel_t = "bayer_rggb10";
+ 					pixel_t = "bayer_rggb";
+ 					readout_orientation = "90";
+ 					line_length = "3448";
+@@ -687,7 +695,7 @@
+ 
+ 					embedded_metadata_height = "2";
+ 				};
+-				mode4 { /* IMX219_MODE_1280x720_60FPS */
++				mode4 /* { // IMX219_MODE_1280x720_60FPS
+ 					mclk_khz = "24000";
+ 					num_lanes = "2";
+ 					tegra_sinterface = "serial_c";
+@@ -698,6 +706,7 @@
+ 
+ 					active_w = "1280";
+ 					active_h = "720";
++					//pixel_t = "bayer_rggb10";
+ 					pixel_t = "bayer_rggb";
+ 					readout_orientation = "90";
+ 					line_length = "3448";
+@@ -708,63 +717,62 @@
+ 					gain_factor = "16";
+ 					framerate_factor = "1000000";
+ 					exposure_factor = "1000000";
+-					min_gain_val = "16"; /* 1.00x */
+-					max_gain_val = "170"; /* 10.66x */
++					min_gain_val = "16"; // 1.00x 
++					max_gain_val = "170"; // 10.66x 
+ 					step_gain_val = "1";
+-					default_gain = "16"; /* 1.00x */
++					default_gain = "16"; // 1.00x 
+ 					min_hdr_ratio = "1";
+ 					max_hdr_ratio = "1";
+-					min_framerate = "2000000"; /* 2.0 fps */
+-					max_framerate = "60000000"; /* 60.0 fps */
++					min_framerate = "2000000"; // 2.0 fps 
++					max_framerate = "60000000"; // 60.0 fps 
+ 					step_framerate = "1";
+-					default_framerate = "60000000"; /* 60.0 fps */
+-					min_exp_time = "13"; /* us */
+-					max_exp_time = "683709"; /* us */
++					default_framerate = "60000000"; // 60.0 fps 
++					min_exp_time = "13"; // us 
++					max_exp_time = "683709"; // us 
+ 					step_exp_time = "1";
+-					default_exp_time = "2495"; /* us */
++					default_exp_time = "2495"; // us 
+ 
+ 					embedded_metadata_height = "2";
+ 				};
+-				/*
+-				*mode5 { // IMX219_MODE_1280x720_120FPS
+-				*	mclk_khz = "24000";
+-				*	num_lanes = "2";
+-				*	tegra_sinterface = "serial_c";
+-				*	phy_mode = "DPHY";
+-				*	discontinuous_clk = "yes";
+-				*	dpcm_enable = "false";
+-				*	cil_settletime = "0";
+-
+-				*	active_w = "1280";
+-				*	active_h = "720";
+-				*	pixel_t = "bayer_rggb";
+-				*	readout_orientation = "90";
+-				*	line_length = "3560";
+-				*	inherent_gain = "1";
+-				*	mclk_multiplier = "9.33";
+-				*	pix_clk_hz = "169600000";
+-
+-				*	gain_factor = "16";
+-				*	framerate_factor = "1000000";
+-				*	exposure_factor = "1000000";
+-				*	min_gain_val = "16"; // 1.00x
+-				*	max_gain_val = "170"; // 10.66x
+-				*	step_gain_val = "1";
+-				*	default_gain = "16"; // 1.00x
+-				*	min_hdr_ratio = "1";
+-				*	max_hdr_ratio = "1";
+-				*	min_framerate = "2000000"; // 2.0 fps
+-				*	max_framerate = "120000000"; // 120.0 fps
+-				*	step_framerate = "1";
+-				*	default_framerate = "120000000"; // 120.0 fps
+-				*	min_exp_time = "13"; // us
+-				*	max_exp_time = "683709"; // us
+-				*	step_exp_time = "1";
+-				*	default_exp_time = "2495"; // us
++				mode5 */ { /* IMX219_MODE_1280x720_120FPS */
++					mclk_khz = "24000";
++					num_lanes = "2";
++					tegra_sinterface = "serial_c";
++					phy_mode = "DPHY";
++					discontinuous_clk = "yes";
++					dpcm_enable = "false";
++					cil_settletime = "0";
+ 
+-				*	embedded_metadata_height = "2";
+-				*};
+-				*/
++					active_w = "1280";
++					active_h = "720";
++					//pixel_t = "bayer_rggb10";
++					pixel_t = "bayer_rggb";
++					readout_orientation = "90";
++					line_length = "3560";
++					inherent_gain = "1";
++					mclk_multiplier = "9.33";
++					pix_clk_hz = "169600000";
++
++					gain_factor = "16";
++					framerate_factor = "1000000";
++					exposure_factor = "1000000";
++					min_gain_val = "16"; // 1.00x
++					max_gain_val = "170"; // 10.66x
++					step_gain_val = "1";
++					default_gain = "16"; // 1.00x
++					min_hdr_ratio = "1";
++					max_hdr_ratio = "1";
++					min_framerate = "2000000"; // 2.0 fps
++					max_framerate = "120000000"; // 120.0 fps
++					step_framerate = "1";
++					default_framerate = "120000000"; // 120.0 fps
++					min_exp_time = "13"; // us
++					max_exp_time = "683709"; // us
++					step_exp_time = "1";
++					default_exp_time = "2495"; // us
++
++					embedded_metadata_height = "2";
++				};
+ 
+ 				ports {
+ 					#address-cells = <1>;
+@@ -823,7 +831,8 @@
+ 		*/
+ 		num_csi_lanes = <4>;
+ 		max_lane_speed = <1500000>;
+-		min_bits_per_pixel = <10>;
++		//min_bits_per_pixel = <10>;
++		min_bits_per_pixel = <8>;
+ 		vi_peak_byte_per_pixel = <2>;
+ 		vi_bw_margin_pct = <25>;
+ 		max_pixel_rate = <240000>;
+diff -rupN tx2nxorig/hardware/nvidia/platform/t18x/lanai/kernel-dts/common/tegra186-camera-rbpcv2-ov9281.dtsi tx2nx/hardware/nvidia/platform/t18x/lanai/kernel-dts/common/tegra186-camera-rbpcv2-ov9281.dtsi
+--- tx2nxorig/hardware/nvidia/platform/t18x/lanai/kernel-dts/common/tegra186-camera-rbpcv2-ov9281.dtsi	1969-12-31 18:00:00.000000000 -0600
++++ tx2nx/hardware/nvidia/platform/t18x/lanai/kernel-dts/common/tegra186-camera-rbpcv2-ov9281.dtsi	2022-11-08 13:07:12.247251063 -0600
+@@ -0,0 +1,344 @@
++/*
++ * Copyright (c) 2018-2020, NVIDIA CORPORATION.  All rights reserved.
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License as published by
++ * the Free Software Foundation; either version 2 of the License, or
++ * (at your option) any later version.
++ *
++ * This program is distributed in the hope that it will be useful, but WITHOUT
++ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
++ * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
++ * more details.
++ *
++ * You should have received a copy of the GNU General Public License
++ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
++ */
++#include <dt-bindings/media/camera.h>
++
++/ {
++	host1x {
++		vi@15700000  {
++			num-channels = <2>;
++			ports {
++				#address-cells = <1>;
++				#size-cells = <0>;
++				vi_port0: port@0 {
++					reg = <0>;
++					rbpcv2_ov9281_vi_in0: endpoint {
++						port-index = <0>;
++						bus-width = <2>;
++						remote-endpoint = <&rbpcv2_ov9281_csi_out0>;
++					};
++				};
++				vi_port1: port@1 {
++					reg = <1>;
++					rbpcv2_ov9281_vi_in1: endpoint {
++						port-index = <2>;
++						bus-width = <2>;
++						remote-endpoint = <&rbpcv2_ov9281_csi_out1>;
++					};
++				};
++			};
++		};
++
++		nvcsi@150c0000 {
++			num-channels = <2>;
++			#address-cells = <1>;
++			#size-cells = <0>;
++			csi_chan0: channel@0 {
++				reg = <0>;
++				ports {
++					#address-cells = <1>;
++					#size-cells = <0>;
++					csi_chan0_port0: port@0 {
++						reg = <0>;
++						rbpcv2_ov9281_csi_in0: endpoint@0 {
++							port-index = <0>;
++							bus-width = <2>;
++							remote-endpoint = <&rbpcv2_ov9281_out0>;
++						};
++					};
++					csi_chan0_port1: port@1 {
++						reg = <1>;
++						rbpcv2_ov9281_csi_out0: endpoint@1 {
++							remote-endpoint = <&rbpcv2_ov9281_vi_in0>;
++						};
++					};
++				};
++			};
++			csi_chan1: channel@1 {
++				reg = <1>;
++				ports {
++					#address-cells = <1>;
++					#size-cells = <0>;
++					csi_chan1_port0: port@0 {
++						reg = <0>;
++						rbpcv2_ov9281_csi_in1: endpoint@2 {
++							port-index = <2>;
++							bus-width = <2>;
++							remote-endpoint = <&rbpcv2_ov9281_out1>;
++						};
++					};
++					csi_chan1_port1: port@1 {
++						reg = <1>;
++						rbpcv2_ov9281_csi_out1: endpoint@3 {
++							remote-endpoint = <&rbpcv2_ov9281_vi_in1>;
++						};
++					};
++				};
++			};
++		};
++	};
++
++	cam_i2cmux {
++		i2c_0:i2c@0 {
++			ov9281_cam0: rbpcv2_ov9281_a@60 {
++				compatible = "nvidia,ov9281";
++				/* I2C device address */
++				reg = <0x60>;
++
++				/*hzhy add */
++				clocks = <&tegra_car TEGRA186_CLK_EXTPERIPH1>;
++        			clock-names = "extperiph1";
++				mclk = "extperiph1";
++
++				/* V4L2 device node location */
++				devnode = "video0";
++
++				/* Physical dimensions of sensor */
++				physical_w = "3.680";
++				physical_h = "2.760";
++
++				sensor_model = "ov9281";
++
++				use_sensor_mode_id = "true";
++
++       		                /*hzhy*/
++				fsync = "none"; /*none/slave/master/slave-trigger*/				
++      
++				mode0 { /* ov9281_MODE_1280x800_120FPS */
++					mclk_khz = "24000";
++					num_lanes = "2";
++					tegra_sinterface = "serial_a";
++					phy_mode = "DPHY";
++					discontinuous_clk = "no";
++					dpcm_enable = "false";
++					cil_settletime = "0";
++
++					active_w = "1280";
++					active_h = "800";
++					/*pixel_t = "bayer_rggb10"; */
++					pixel_t = "bayer_rggb";
++					readout_orientation = "90";
++		
++					line_length = "1408"; /* 1355?*/
++					inherent_gain = "1";
++					mclk_multiplier = "9.33";
++		
++					pix_clk_hz = "800000000";
++
++	
++					gain_factor = "1";
++					framerate_factor = "1";
++					exposure_factor = "1";
++					min_gain_val = "1"; /* 1.00x */	
++					max_gain_val = "8191"; /* 10.66x */
++					step_gain_val = "1";
++					default_gain = "16"; /* 1.00x */
++					min_framerate = "1"; /* 2.0 fps */
++					max_framerate = "120000"; /* 120.0 fps */
++					step_framerate = "1";
++					default_framerate = "120000"; /* 120.0 fps */
++					min_exp_time = "1"; /* us */
++					max_exp_time = "16777215"; /* us */
++					step_exp_time = "1";
++					default_exp_time = "10896"; /* us */
++
++					embedded_metadata_height = "0";
++				};
++
++				ports {
++					#address-cells = <1>;
++					#size-cells = <0>;
++					port@0 {
++						reg = <0>;
++						rbpcv2_ov9281_out0: endpoint {
++							port-index = <0>;
++							bus-width = <2>;
++							remote-endpoint = <&rbpcv2_ov9281_csi_in0>;
++						};
++					};
++				};
++			};
++		};
++		i2c_1:i2c@1 {
++			ov9281_cam1: rbpcv2_ov9281_c@60 {
++				compatible = "nvidia,ov9281";
++				/* I2C device address */
++				reg = <0x60>;
++
++				/*hzhy add */
++				clocks = <&tegra_car TEGRA186_CLK_EXTPERIPH2>;
++        			clock-names = "extperiph2";
++				mclk = "extperiph2";
++
++				/* V4L2 device node location */
++				devnode = "video1";
++
++				/* Physical dimensions of sensor */
++				physical_w = "3.680";
++				physical_h = "2.760";
++
++				sensor_model = "ov9281";
++
++				use_sensor_mode_id = "true";
++
++       		                /*hzhy*/
++				fsync = "none"; /*none/slave/master/slave-trigger*/				
++      
++				mode0 { /* ov9281_MODE_1280x800_120FPS */
++					mclk_khz = "24000";
++					num_lanes = "2";
++					tegra_sinterface = "serial_c";
++					phy_mode = "DPHY";
++					discontinuous_clk = "no";
++					dpcm_enable = "false";
++					cil_settletime = "0";
++
++					active_w = "1280";
++					active_h = "800";
++					/*pixel_t = "bayer_rggb10"; */
++					pixel_t = "bayer_rggb";
++					readout_orientation = "90";
++		
++					line_length = "1408"; /* 1355? */
++					inherent_gain = "1";
++					mclk_multiplier = "9.33";
++		
++					pix_clk_hz = "800000000";
++
++	
++					gain_factor = "1";
++					framerate_factor = "1";
++					exposure_factor = "1";
++					min_gain_val = "1"; /* 1.00x */	
++					max_gain_val = "8191"; /* 10.66x */
++					step_gain_val = "1";
++					default_gain = "16"; /* 1.00x */
++					min_framerate = "1"; /* 2.0 fps */
++					max_framerate = "120000"; /* 120.0 fps */
++					step_framerate = "1";
++					default_framerate = "120000"; /* 120.0 fps */
++					min_exp_time = "1"; /* us */
++					max_exp_time = "16777215"; /* us */
++					step_exp_time = "1";
++					default_exp_time = "10896"; /* us */
++
++					embedded_metadata_height = "0";
++				};
++
++				ports {
++					#address-cells = <1>;
++					#size-cells = <0>;
++					port@0 {
++						reg = <0>;
++						rbpcv2_ov9281_out1: endpoint {
++							status = "okay";
++							port-index = <2>;
++							bus-width = <2>;
++							remote-endpoint = <&rbpcv2_ov9281_csi_in1>;
++						};
++					};
++				};
++			};
++		};
++	
++	};
++	lens_ov9281@RBPCV2 {
++		min_focus_distance = "0.0";
++		hyper_focal = "0.0";
++		focal_length = "3.04";
++		f_number = "2.0";
++		aperture = "0.0";
++	};
++};
++/ {
++	tcp: tegra-camera-platform {
++		compatible = "nvidia, tegra-camera-platform";
++		/**
++		* Physical settings to calculate max ISO BW
++		*
++		* num_csi_lanes = <>;
++		* Total number of CSI lanes when all cameras are active
++		*
++		* max_lane_speed = <>;
++		* Max lane speed in Kbit/s
++		*
++		* min_bits_per_pixel = <>;
++		* Min bits per pixel
++		*
++		* vi_peak_byte_per_pixel = <>;
++		* Max byte per pixel for the VI ISO case
++		*
++		* vi_bw_margin_pct = <>;
++		* Vi bandwidth margin in percentage
++		*
++		* max_pixel_rate = <>;
++		* Max pixel rate in Kpixel/s for the ISP ISO case
++		*
++		* isp_peak_byte_per_pixel = <>;
++		* Max byte per pixel for the ISP ISO case
++		*
++		* isp_bw_margin_pct = <>;
++		* Isp bandwidth margin in percentage
++		*/
++		num_csi_lanes = <4>;
++		max_lane_speed = <1500000>;
++		min_bits_per_pixel = <10>;
++		vi_peak_byte_per_pixel = <2>;
++		vi_bw_margin_pct = <25>;
++		max_pixel_rate = <240000>;
++		isp_peak_byte_per_pixel = <5>;
++		isp_bw_margin_pct = <25>;
++
++		/**
++		 * The general guideline for naming badge_info contains 3 parts, and is as follows,
++		 * The first part is the camera_board_id for the module; if the module is in a FFD
++		 * platform, then use the platform name for this part.
++		 * The second part contains the position of the module, ex. "rear" or "front".
++		 * The third part contains the last 6 characters of a part number which is found
++		 * in the module's specsheet from the vendor.
++		 */
++		modules {
++			cam_module0: module0 {
++				badge = "lanai_front_RBP194";
++				position = "front";
++				orientation = "1";
++				cam_module0_drivernode0: drivernode0 {
++					pcl_id = "v4l2_sensor";
++					devname = "ov9281 9-0060";
++					proc-device-tree = "/proc/device-tree/cam_i2cmux/i2c@0/rbpcv2_ov9281_a@60";
++				};
++				cam_module0_drivernode1: drivernode1 {
++					pcl_id = "v4l2_lens";
++					proc-device-tree = "/proc/device-tree/lens_ov9281@RBPCV2/";
++				};
++			};
++			cam_module1: module1 {
++				badge = "lanai_rear_RBP194";
++				position = "rear";
++				orientation = "1";
++				cam_module1_drivernode0: drivernode0 {
++					pcl_id = "v4l2_sensor";
++					devname = "ov9281 10-0060";
++					proc-device-tree = "/proc/device-tree/cam_i2cmux/i2c@1/rbpcv2_ov9281_c@60";
++				};
++				cam_module1_drivernode1: drivernode1 {
++					pcl_id = "v4l2_lens";
++					proc-device-tree = "/proc/device-tree/lens_ov9281@RBPCV2/";
++				};
++			};
++		};
++	};
++};
+diff -rupN tx2nxorig/hardware/nvidia/platform/t18x/lanai/kernel-dts/tegra186-p3636-0001-p3509-0000-a01.dts tx2nx/hardware/nvidia/platform/t18x/lanai/kernel-dts/tegra186-p3636-0001-p3509-0000-a01.dts
+--- tx2nxorig/hardware/nvidia/platform/t18x/lanai/kernel-dts/tegra186-p3636-0001-p3509-0000-a01.dts	2022-02-16 00:20:03.000000000 -0600
++++ tx2nx/hardware/nvidia/platform/t18x/lanai/kernel-dts/tegra186-p3636-0001-p3509-0000-a01.dts	2022-10-22 16:31:47.105106103 -0500
+@@ -16,7 +16,8 @@
+ #include "common/tegra186-p3509-0000-cvb.dtsi"
+ #include "common/tegra186-p3509-0000-a00-fixed-regulator.dtsi"
+ #include "common/tegra186-p3636-0001-a00-prod.dtsi"
+-#include "common/tegra186-camera-lanai-rbpcv2-imx219.dtsi"
++/* #include "common/tegra186-camera-lanai-rbpcv2-imx219.dtsi" RJS */
++#include "common/tegra186-camera-lanai-rbpcv2-ov9281.dtsi"
+ 
+ /* plugin manager */
+ #include "common/tegra186-super-module-e2614-p3509-0000-a00.dtsi"
+diff -rupN tx2nxorig/hardware/nvidia/platform/t18x/lanai/kernel-dts/tegra186-p3636-0002-p3509-0000-a01.dts tx2nx/hardware/nvidia/platform/t18x/lanai/kernel-dts/tegra186-p3636-0002-p3509-0000-a01.dts
+--- tx2nxorig/hardware/nvidia/platform/t18x/lanai/kernel-dts/tegra186-p3636-0002-p3509-0000-a01.dts	2022-02-16 00:20:03.000000000 -0600
++++ tx2nx/hardware/nvidia/platform/t18x/lanai/kernel-dts/tegra186-p3636-0002-p3509-0000-a01.dts	2022-10-22 16:32:09.265058068 -0500
+@@ -16,7 +16,8 @@
+ #include "common/tegra186-p3509-0000-cvb.dtsi"
+ #include "common/tegra186-p3509-0000-a00-fixed-regulator.dtsi"
+ #include "common/tegra186-p3636-0001-a00-prod.dtsi"
+-#include "common/tegra186-camera-lanai-rbpcv2-imx219.dtsi"
++/*#include "common/tegra186-camera-lanai-rbpcv2-imx219.dtsi" RJS */
++#include "common/tegra186-camera-lanai-rbpcv2-ov9281.dtsi"
+ 
+ /* plugin manager */
+ #include "common/tegra186-super-module-e2614-p3509-0000-a00.dtsi"
+diff -rupN tx2nxorig/hardware/nvidia/platform/t19x/jakku/kernel-dts/common/tegra194-camera-jakku-rbpcv2-ov9281.dtsi tx2nx/hardware/nvidia/platform/t19x/jakku/kernel-dts/common/tegra194-camera-jakku-rbpcv2-ov9281.dtsi
+--- tx2nxorig/hardware/nvidia/platform/t19x/jakku/kernel-dts/common/tegra194-camera-jakku-rbpcv2-ov9281.dtsi	1969-12-31 18:00:00.000000000 -0600
++++ tx2nx/hardware/nvidia/platform/t19x/jakku/kernel-dts/common/tegra194-camera-jakku-rbpcv2-ov9281.dtsi	2022-10-22 15:12:43.638909430 -0500
+@@ -0,0 +1,57 @@
++/*
++ * Copyright (c) 2018-2020, NVIDIA CORPORATION.  All rights reserved.
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License as published by
++ * the Free Software Foundation; either version 2 of the License, or
++ * (at your option) any later version.
++ *
++ * This program is distributed in the hope that it will be useful, but WITHOUT
++ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
++ * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
++ * more details.
++ *
++ * You should have received a copy of the GNU General Public License
++ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
++ */
++
++#include "tegra194-camera-rbpcv2-ov9281.dtsi"
++
++#define CAM0_PWDN	TEGRA194_MAIN_GPIO(P, 4)
++#define CAM1_PWDN	TEGRA194_MAIN_GPIO(P, 5)
++#define CAM_I2C_MUX 	TEGRA194_AON_GPIO(CC, 3)
++
++/ {
++	cam_i2cmux{
++		compatible = "i2c-mux-gpio";
++		#address-cells = <1>;
++		#size-cells = <0>;
++		i2c-parent = <&cam_i2c>;
++		mux-gpios = <&tegra_aon_gpio CAM_I2C_MUX GPIO_ACTIVE_HIGH>;
++		i2c@0 {
++			reg = <0>;
++			#address-cells = <1>;
++			#size-cells = <0>;
++			rbpcv2_imx219_a@50 {
++				reset-gpios = <&tegra_main_gpio CAM0_PWDN GPIO_ACTIVE_HIGH>;
++			};
++		};
++		i2c@1 {
++			reg = <1>;
++			#address-cells = <1>;
++			#size-cells = <0>;
++			rbpcv2_imx219_c@50 {
++				reset-gpios = <&tegra_main_gpio CAM1_PWDN GPIO_ACTIVE_HIGH>;
++			};
++		};
++	};
++
++	gpio@2200000 {
++		camera-control-output-low {
++			gpio-hog;
++			output-low;
++			gpios = <CAM0_PWDN 0 CAM1_PWDN 0>;
++			label = "cam0-pwdn","cam1-pwdn";
++		};
++	};
++};
+diff -rupN tx2nxorig/hardware/nvidia/platform/t19x/jakku/kernel-dts/common/tegra194-camera-rbpcv2-imx219.dtsi tx2nx/hardware/nvidia/platform/t19x/jakku/kernel-dts/common/tegra194-camera-rbpcv2-imx219.dtsi
+--- tx2nxorig/hardware/nvidia/platform/t19x/jakku/kernel-dts/common/tegra194-camera-rbpcv2-imx219.dtsi	2022-02-16 00:20:03.000000000 -0600
++++ tx2nx/hardware/nvidia/platform/t19x/jakku/kernel-dts/common/tegra194-camera-rbpcv2-imx219.dtsi	2022-09-15 21:00:20.481265628 -0500
+@@ -382,46 +382,44 @@
+ 
+ 					embedded_metadata_height = "2";
+ 				};
+-				/*
+-				*mode5 {  IMX219_MODE_1280x720_120FPS
+-					* mclk_khz = "24000";
+-					* num_lanes = "2";
+-					* tegra_sinterface = "serial_a";
+-					* phy_mode = "DPHY";
+-					* discontinuous_clk = "yes";
+-					* dpcm_enable = "false";
+-					* cil_settletime = "0";
+-
+-					* active_w = "1280";
+-					* active_h = "720";
+-					* pixel_t = "bayer_rggb";
+-					* readout_orientation = "90";
+-					* line_length = "3560";
+-					* inherent_gain = "1";
+-					* mclk_multiplier = "9.33";
+-					* pix_clk_hz = "169600000";
+-
+-					* gain_factor = "16";
+-					* framerate_factor = "1000000";
+-					* exposure_factor = "1000000";
+-					* min_gain_val = "16"; // 1.00x
+-					* max_gain_val = "170"; // 10.66x
+-					* step_gain_val = "1";
+-					* default_gain = "16"; // 1.00x
+-					* min_hdr_ratio = "1";
+-					* max_hdr_ratio = "1";
+-					* min_framerate = "2000000"; // 2.0 fps
+-					* max_framerate = "120000000"; // 120.0 fps
+-					* step_framerate = "1";
+-					* default_framerate = "120000000"; // 120.0 fps
+-					* min_exp_time = "13"; // us
+-					* max_exp_time = "683709"; // us
+-					* step_exp_time = "1";
+-					* default_exp_time = "2495"; // us
++				mode5 { /* IMX219_MODE_1280x720_120FPS */
++					mclk_khz = "24000";
++					num_lanes = "2";
++					tegra_sinterface = "serial_a";
++					phy_mode = "DPHY";
++					discontinuous_clk = "yes";
++					dpcm_enable = "false";
++					cil_settletime = "0";
+ 
+-					* embedded_metadata_height = "2";
+-				*};
+-				*/
++					active_w = "1280";
++					active_h = "720";
++					pixel_t = "bayer_rggb";
++					readout_orientation = "90";
++					line_length = "3560";
++					inherent_gain = "1";
++					mclk_multiplier = "9.33";
++					pix_clk_hz = "169600000";
++
++					gain_factor = "16";
++					framerate_factor = "1000000";
++					exposure_factor = "1000000";
++					min_gain_val = "16"; // 1.00x
++					max_gain_val = "170"; // 10.66x
++					step_gain_val = "1";
++					default_gain = "16"; // 1.00x
++					min_hdr_ratio = "1";
++					max_hdr_ratio = "1";
++					min_framerate = "2000000"; // 2.0 fps
++					max_framerate = "120000000"; // 120.0 fps
++					step_framerate = "1";
++					default_framerate = "120000000"; // 120.0 fps
++					min_exp_time = "13"; // us
++					max_exp_time = "683709"; // us
++					step_exp_time = "1";
++					default_exp_time = "2495"; // us
++
++					embedded_metadata_height = "2";
++				};
+ 
+ 				ports {
+ 					#address-cells = <1>;
+@@ -725,46 +723,44 @@
+ 
+ 					embedded_metadata_height = "2";
+ 				};
+-				/*
+-				*mode5 { // IMX219_MODE_1280x720_120FPS
+-				*	mclk_khz = "24000";
+-				*	num_lanes = "2";
+-				*	tegra_sinterface = "serial_c";
+-				*	phy_mode = "DPHY";
+-				*	discontinuous_clk = "yes";
+-				*	dpcm_enable = "false";
+-				*	cil_settletime = "0";
+-
+-				*	active_w = "1280";
+-				*	active_h = "720";
+-				*	pixel_t = "bayer_rggb";
+-				*	readout_orientation = "90";
+-				*	line_length = "3560";
+-				*	inherent_gain = "1";
+-				*	mclk_multiplier = "9.33";
+-				*	pix_clk_hz = "169600000";
+-
+-				*	gain_factor = "16";
+-				*	framerate_factor = "1000000";
+-				*	exposure_factor = "1000000";
+-				*	min_gain_val = "16"; // 1.00x
+-				*	max_gain_val = "170"; // 10.66x
+-				*	step_gain_val = "1";
+-				*	default_gain = "16"; // 1.00x
+-				*	min_hdr_ratio = "1";
+-				*	max_hdr_ratio = "1";
+-				*	min_framerate = "2000000"; // 2.0 fps
+-				*	max_framerate = "120000000"; // 120.0 fps
+-				*	step_framerate = "1";
+-				*	default_framerate = "120000000"; // 120.0 fps
+-				*	min_exp_time = "13"; // us
+-				*	max_exp_time = "683709"; // us
+-				*	step_exp_time = "1";
+-				*	default_exp_time = "2495"; // us
++				mode5 { // IMX219_MODE_1280x720_120FPS
++					mclk_khz = "24000";
++					num_lanes = "2";
++					tegra_sinterface = "serial_c";
++					phy_mode = "DPHY";
++					discontinuous_clk = "yes";
++					dpcm_enable = "false";
++					cil_settletime = "0";
+ 
+-				*	embedded_metadata_height = "2";
+-				*};
+-				*/
++					active_w = "1280";
++					active_h = "720";
++					pixel_t = "bayer_rggb";
++					readout_orientation = "90";
++					line_length = "3560";
++					inherent_gain = "1";
++					mclk_multiplier = "9.33";
++					pix_clk_hz = "169600000";
++
++					gain_factor = "16";
++					framerate_factor = "1000000";
++					exposure_factor = "1000000";
++					min_gain_val = "16"; // 1.00x
++					max_gain_val = "170"; // 10.66x
++					step_gain_val = "1";
++					default_gain = "16"; // 1.00x
++					min_hdr_ratio = "1";
++					max_hdr_ratio = "1";
++					min_framerate = "2000000"; // 2.0 fps
++					max_framerate = "120000000"; // 120.0 fps
++					step_framerate = "1";
++					default_framerate = "120000000"; // 120.0 fps
++					min_exp_time = "13"; // us
++					max_exp_time = "683709"; // us
++					step_exp_time = "1";
++					default_exp_time = "2495"; // us
++
++					embedded_metadata_height = "2";
++				};
+ 
+ 				ports {
+ 					#address-cells = <1>;
+diff -rupN tx2nxorig/hardware/nvidia/platform/t19x/jakku/kernel-dts/common/tegra194-camera-rbpcv2-ov9281.dtsi tx2nx/hardware/nvidia/platform/t19x/jakku/kernel-dts/common/tegra194-camera-rbpcv2-ov9281.dtsi
+--- tx2nxorig/hardware/nvidia/platform/t19x/jakku/kernel-dts/common/tegra194-camera-rbpcv2-ov9281.dtsi	1969-12-31 18:00:00.000000000 -0600
++++ tx2nx/hardware/nvidia/platform/t19x/jakku/kernel-dts/common/tegra194-camera-rbpcv2-ov9281.dtsi	2022-10-22 15:09:40.853439341 -0500
+@@ -0,0 +1,341 @@
++/*
++ * Copyright (c) 2018-2020, NVIDIA CORPORATION.  All rights reserved.
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License as published by
++ * the Free Software Foundation; either version 2 of the License, or
++ * (at your option) any later version.
++ *
++ * This program is distributed in the hope that it will be useful, but WITHOUT
++ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
++ * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
++ * more details.
++ *
++ * You should have received a copy of the GNU General Public License
++ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
++ */
++#include <dt-bindings/media/camera.h>
++
++/ {
++	host1x {
++		vi@15c10000  {
++			num-channels = <2>;
++			ports {
++				#address-cells = <1>;
++				#size-cells = <0>;
++				vi_port0: port@0 {
++					reg = <0>;
++					rbpcv2_ov9281_vi_in0: endpoint {
++						port-index = <0>;
++						bus-width = <2>;
++						remote-endpoint = <&rbpcv2_ov9281_csi_out0>;
++					};
++				};
++				vi_port1: port@1 {
++					reg = <1>;
++					rbpcv2_ov9281_vi_in1: endpoint {
++						port-index = <2>;
++						bus-width = <2>;
++						remote-endpoint = <&rbpcv2_ov9281_csi_out1>;
++					};
++				};
++			};
++		};
++
++		nvcsi@15a00000 {
++			num-channels = <2>;
++			#address-cells = <1>;
++			#size-cells = <0>;
++			csi_chan0: channel@0 {
++				reg = <0>;
++				ports {
++					#address-cells = <1>;
++					#size-cells = <0>;
++					csi_chan0_port0: port@0 {
++						reg = <0>;
++						rbpcv2_ov9281_csi_in0: endpoint@0 {
++							port-index = <0>;
++							bus-width = <2>;
++							remote-endpoint = <&rbpcv2_ov9281_out0>;
++						};
++					};
++					csi_chan0_port1: port@1 {
++						reg = <1>;
++						rbpcv2_ov9281_csi_out0: endpoint@1 {
++							remote-endpoint = <&rbpcv2_ov9281_vi_in0>;
++						};
++					};
++				};
++			};
++			csi_chan1: channel@1 {
++				reg = <1>;
++				ports {
++					#address-cells = <1>;
++					#size-cells = <0>;
++					csi_chan1_port0: port@0 {
++						reg = <0>;
++						rbpcv2_ov9281_csi_in1: endpoint@2 {
++							port-index = <2>;
++							bus-width = <2>;
++							remote-endpoint = <&rbpcv2_ov9281_out1>;
++						};
++					};
++					csi_chan1_port1: port@1 {
++						reg = <1>;
++						rbpcv2_ov9281_csi_out1: endpoint@3 {
++							remote-endpoint = <&rbpcv2_ov9281_vi_in1>;
++						};
++					};
++				};
++			};
++		};
++	};
++	cam_i2cmux {
++		i2c_0:i2c@0 {
++			ov9281_cam0: rbpcv2_ov9281_a@60 {
++				compatible = “nvidia,ov9281”;
++				/* I2C device address */
++				reg = <0x60>;
++
++				/*hzhy add */
++				clocks = <&bpmp_clks TEGRA194_CLK_EXTPERIPH1>;
++        			clock-names = "extperiph1";
++				mclk = "extperiph1";
++
++				/* V4L2 device node location */
++				devnode = "video0";
++
++				/* Physical dimensions of sensor */
++				physical_w = "3.680";
++				physical_h = "2.760";
++
++				sensor_model = "ov9281";
++
++				use_sensor_mode_id = "true";
++
++       		                /*hzhy*/
++				fsync = "none";/*none/slave/master/slave-trigger*/				
++      
++				mode0 { /* IMX219_MODE_1280x800_60FPS */
++					mclk_khz = "26000";
++					num_lanes = "2";
++					tegra_sinterface = "serial_a";
++					phy_mode = "DPHY";
++					discontinuous_clk = "no";
++					dpcm_enable = "false";
++					cil_settletime = "0";
++
++					active_w = "1280";
++					active_h = "800";
++					pixel_t = "bayer_rggb10";
++					readout_orientation = "90";
++		
++					line_length = "1408";
++					inherent_gain = "1";
++					mclk_multiplier = "7.69";
++		
++					pix_clk_hz = "200000000";
++
++	
++					gain_factor = "1";
++					framerate_factor = "1";
++					exposure_factor = "1";
++					min_gain_val = "1"; /* 1.00x */	
++					max_gain_val = "8191"; /* 10.66x */
++					step_gain_val = "1";
++					default_gain = "16"; /* 1.00x */
++					min_framerate = "1"; /* 2.0 fps */
++					max_framerate = "65535"; /* 60.0 fps */
++					step_framerate = "1";
++					default_framerate = "64625"; /* 60.0 fps */
++					min_exp_time = "1"; /* us */
++					max_exp_time = "16777215"; /* us */
++					step_exp_time = "1";
++					default_exp_time = "10896"; /* us */
++
++					embedded_metadata_height = "0";
++				};
++
++				ports {
++					#address-cells = <1>;
++					#size-cells = <0>;
++					port@0 {
++						reg = <0>;
++						rbpcv2_ov9281_out0: endpoint {
++							port-index = <0>;
++							bus-width = <2>;
++							remote-endpoint = <&rbpcv2_ov9281_csi_in0>;
++						};
++					};
++				};
++			};
++		};
++		i2c_1:i2c@1 {
++			ov9281_cam1: rbpcv2_ov9281_c@60 {
++				compatible = “nvidia,ov9281”;
++				/* I2C device address */
++				reg = <0x60>;
++
++				/*hzhy add */
++				clocks = <&bpmp_clks TEGRA194_CLK_EXTPERIPH1>;
++        			clock-names = "extperiph1";
++				mclk = "extperiph1";
++
++				/* V4L2 device node location */
++				devnode = "video1";
++
++				/* Physical dimensions of sensor */
++				physical_w = "3.680";
++				physical_h = "2.760";
++
++				sensor_model = "ov9281";
++
++				use_sensor_mode_id = "true";
++
++       		                /*hzhy*/
++				fsync = "none";/*none/slave/master/slave-trigger*/				
++      
++				mode0 { /* IMX219_MODE_1280x720_60FPS */
++					mclk_khz = "26000";
++					num_lanes = "2";
++					tegra_sinterface = "serial_a";
++					phy_mode = "DPHY";
++					discontinuous_clk = "no";
++					dpcm_enable = "false";
++					cil_settletime = "0";
++
++					active_w = "1280";
++					active_h = "800";
++					pixel_t = "bayer_rggb10";
++					readout_orientation = "90";
++		
++					line_length = "1408";
++					inherent_gain = "1";
++					mclk_multiplier = "7.69";
++		
++					pix_clk_hz = "200000000";
++
++	
++					gain_factor = "1";
++					framerate_factor = "1";
++					exposure_factor = "1";
++					min_gain_val = "1"; /* 1.00x */	
++					max_gain_val = "8191"; /* 10.66x */
++					step_gain_val = "1";
++					default_gain = "16"; /* 1.00x */
++					min_framerate = "1"; /* 2.0 fps */
++					max_framerate = "65535"; /* 60.0 fps */
++					step_framerate = "1";
++					default_framerate = "64625"; /* 60.0 fps */
++					min_exp_time = "1"; /* us */
++					max_exp_time = "16777215"; /* us */
++					step_exp_time = "1";
++					default_exp_time = "10896"; /* us */
++
++					embedded_metadata_height = "0";
++				};
++
++				ports {
++					#address-cells = <1>;
++					#size-cells = <0>;
++					port@0 {
++						reg = <0>;
++						rbpcv2_ov9281_out1: endpoint {
++							status = "okay";
++							port-index = <2>;
++							bus-width = <2>;
++							remote-endpoint = <&rbpcv2_ov9281_csi_in1>;
++						};
++					};
++				};
++			};
++		};
++	
++	};
++	lens_ov9281@RBPCV2 {
++		min_focus_distance = "0.0";
++		hyper_focal = "0.0";
++		focal_length = "3.04";
++		f_number = "2.0";
++		aperture = "0.0";
++	};
++};
++/ {
++	tcp: tegra-camera-platform {
++		compatible = "nvidia, tegra-camera-platform";
++		/**
++		* Physical settings to calculate max ISO BW
++		*
++		* num_csi_lanes = <>;
++		* Total number of CSI lanes when all cameras are active
++		*
++		* max_lane_speed = <>;
++		* Max lane speed in Kbit/s
++		*
++		* min_bits_per_pixel = <>;
++		* Min bits per pixel
++		*
++		* vi_peak_byte_per_pixel = <>;
++		* Max byte per pixel for the VI ISO case
++		*
++		* vi_bw_margin_pct = <>;
++		* Vi bandwidth margin in percentage
++		*
++		* max_pixel_rate = <>;
++		* Max pixel rate in Kpixel/s for the ISP ISO case
++		*
++		* isp_peak_byte_per_pixel = <>;
++		* Max byte per pixel for the ISP ISO case
++		*
++		* isp_bw_margin_pct = <>;
++		* Isp bandwidth margin in percentage
++		*/
++		num_csi_lanes = <4>;
++		max_lane_speed = <1500000>;
++		min_bits_per_pixel = <10>;
++		vi_peak_byte_per_pixel = <2>;
++		vi_bw_margin_pct = <25>;
++		max_pixel_rate = <240000>;
++		isp_peak_byte_per_pixel = <5>;
++		isp_bw_margin_pct = <25>;
++
++		/**
++		 * The general guideline for naming badge_info contains 3 parts, and is as follows,
++		 * The first part is the camera_board_id for the module; if the module is in a FFD
++		 * platform, then use the platform name for this part.
++		 * The second part contains the position of the module, ex. "rear" or "front".
++		 * The third part contains the last 6 characters of a part number which is found
++		 * in the module's specsheet from the vendor.
++		 */
++		modules {
++			cam_module0: module0 {
++				badge = "jakku_front_RBP194";
++				position = "front";
++				orientation = "1";
++				cam_module0_drivernode0: drivernode0 {
++					pcl_id = "v4l2_sensor";
++					devname = "ov9281 9-0060";
++					proc-device-tree = "/proc/device-tree/cam_i2cmux/i2c@0/rbpcv2_ov9281_a@60";
++				};
++				cam_module0_drivernode1: drivernode1 {
++					pcl_id = "v4l2_lens";
++					proc-device-tree = "/proc/device-tree/lens_ov9281@RBPCV2/";
++				};
++			};
++			cam_module1: module1 {
++				badge = "jakku_rear_RBP194";
++				position = "rear";
++				orientation = "1";
++				cam_module1_drivernode0: drivernode0 {
++					pcl_id = "v4l2_sensor";
++					devname = "ov9281 10-0060";
++					proc-device-tree = "/proc/device-tree/cam_i2cmux/i2c@1/rbpcv2_ov9281_c@60";
++				};
++				cam_module1_drivernode1: drivernode1 {
++					pcl_id = "v4l2_lens";
++					proc-device-tree = "/proc/device-tree/lens_ov9281@RBPCV2/";
++				};
++			};
++		};
++	};
++};
+diff -rupN tx2nxorig/hardware/nvidia/platform/t19x/jakku/kernel-dts/Makefile tx2nx/hardware/nvidia/platform/t19x/jakku/kernel-dts/Makefile
+--- tx2nxorig/hardware/nvidia/platform/t19x/jakku/kernel-dts/Makefile	2022-02-16 00:20:03.000000000 -0600
++++ tx2nx/hardware/nvidia/platform/t19x/jakku/kernel-dts/Makefile	2022-10-22 15:15:23.748330431 -0500
+@@ -16,6 +16,7 @@ dtbo-$(CONFIG_ARCH_TEGRA_19x_SOC) += teg
+ dtbo-$(CONFIG_ARCH_TEGRA_19x_SOC) += tegra194-p3668-all-p3509-0000-camera-imx477-imx219.dtbo
+ dtbo-$(CONFIG_ARCH_TEGRA_19x_SOC) += tegra194-p3668-all-p3509-0000-camera-imx477-dual.dtbo
+ dtbo-$(CONFIG_ARCH_TEGRA_19x_SOC) += tegra194-p3668-all-p3509-0000-camera-imx219-dual.dtbo
++dtbo-$(CONFIG_ARCH_TEGRA_19x_SOC) += tegra194-p3668-all-p3509-0000-camera-ov9281-dual.dtbo
+ 
+ ifneq ($(dtb-y),)
+ dtb-y := $(addprefix $(makefile-path)/,$(dtb-y))
+diff -rupN tx2nxorig/hardware/nvidia/platform/t19x/jakku/kernel-dts/tegra194-p3668-all-p3509-0000-camera-ov9281-dual.dts tx2nx/hardware/nvidia/platform/t19x/jakku/kernel-dts/tegra194-p3668-all-p3509-0000-camera-ov9281-dual.dts
+--- tx2nxorig/hardware/nvidia/platform/t19x/jakku/kernel-dts/tegra194-p3668-all-p3509-0000-camera-ov9281-dual.dts	1969-12-31 18:00:00.000000000 -0600
++++ tx2nx/hardware/nvidia/platform/t19x/jakku/kernel-dts/tegra194-p3668-all-p3509-0000-camera-ov9281-dual.dts	2022-10-22 15:18:33.429751612 -0500
+@@ -0,0 +1,115 @@
++// SPDX-License-Identifier: GPL-2.0-only
++/*
++ * Jetson Device-tree overlay for dual camera ov9281 rbpcv2 on dual
++ * cam connector baseboards
++ *
++ * Copyright (c) 2021 NVIDIA CORPORATION. All rights reserved.
++ *
++ */
++
++/dts-v1/;
++/plugin/;
++
++/ {
++	overlay-name = "Camera ov9281 Dual";
++	jetson-header-name = "Jetson Nano CSI Connector";
++	compatible = "nvidia,p3449-0000+p3668-0000", "nvidia,p3449-0000+p3668-0001", "nvidia,p3509-0000+p3668-0000", "nvidia,p3509-0000+p3668-0001";
++
++	/* ov9281 dual sensor module */
++	fragment@0 {
++		target = <&ov9281_cam0>;
++		__overlay__ {
++			status = "okay";
++		};
++	};
++	fragment@1 {
++		target = <&cam_module0>;
++		__overlay__ {
++			status = "okay";
++			badge = "jakku_front_RBP194";
++			position = "front";
++			orientation = "1";
++		};
++	};
++	fragment@2 {
++		target = <&cam_module0_drivernode0>;
++		__overlay__ {
++			status = "okay";
++			pcl_id = "v4l2_sensor";
++			devname = "ov9281 9-0050";
++			proc-device-tree = "/proc/device-tree/cam_i2cmux/i2c@0/rbpcv2_ov9281_a@50";
++		};
++	};
++	fragment@3 {
++		target = <&ov9281_cam1>;
++		__overlay__ {
++			status = "okay";
++		};
++	};
++	fragment@4 {
++		target = <&cam_module1>;
++		__overlay__ {
++			status = "okay";
++			badge = "jakku_rear_RBP194";
++			position = "rear";
++			orientation = "1";
++		};
++	};
++	fragment@5 {
++		target = <&cam_module1_drivernode0>;
++		__overlay__ {
++			status = "okay";
++			pcl_id = "v4l2_sensor";
++			devname = "ov9281 10-0050";
++			proc-device-tree = "/proc/device-tree/cam_i2cmux/i2c@1/rbpcv2_ov9281_c@50";
++		};
++	};
++	fragment@6 {
++		target = <&rbpcv2_ov9281_vi_in0>;
++		__overlay__ {
++			status = "okay";
++			port-index = <0>;
++			bus-width = <2>;
++			remote-endpoint = <&rbpcv2_ov9281_csi_out0>;
++		};
++	};
++	fragment@7 {
++		target = <&rbpcv2_ov9281_vi_in1>;
++		__overlay__ {
++			status = "okay";
++			port-index = <2>;
++			bus-width = <2>;
++			remote-endpoint = <&rbpcv2_ov9281_csi_out1>;
++		};
++	};
++	fragment@8 {
++		target = <&rbpcv2_ov9281_csi_in0>;
++		__overlay__ {
++			status = "okay";
++			port-index = <0>;
++			bus-width = <2>;
++			remote-endpoint = <&rbpcv2_ov9281_out0>;
++		};
++	};
++	fragment@9 {
++		target = <&rbpcv2_ov9281_csi_out0>;
++		__overlay__ {
++			status = "okay";
++		};
++	};
++	fragment@10 {
++		target = <&rbpcv2_ov9281_csi_in1>;
++		__overlay__ {
++			status = "okay";
++			port-index = <2>;
++			bus-width = <2>;
++			remote-endpoint = <&rbpcv2_ov9281_out1>;
++		};
++	};
++	fragment@12 {
++		target = <&rbpcv2_ov9281_csi_out1>;
++		__overlay__ {
++			status = "okay";
++		};
++	};
++};
