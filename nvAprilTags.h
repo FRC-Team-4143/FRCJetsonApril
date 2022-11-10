@@ -46,6 +46,7 @@ typedef struct nvAprilTagsCameraIntrinsics_st {
 typedef enum
 {
     NVAT_TAG36H11,                 // Default, currently the only tag family supported
+    NVAT_TAG16H5,                
     NVAT_ENUM_SIZE = 0x7fffffff    // Force int32_t
 }
 nvAprilTagsFamily;

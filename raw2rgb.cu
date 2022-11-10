@@ -46,6 +46,41 @@ __global__ void gpuConvertgraytoRGBA_kernel(unsigned char *src, unsigned char *d
 		dst[i*width*4+idx*4+3] = 0;
 	}
 }
+__global__ void gpuConvertgraytoRGBA_kernel(unsigned short *src, unsigned char *dst,
+		unsigned int width, unsigned int height)
+{
+	int idx = blockIdx.x * blockDim.x + threadIdx.x;
+	if (idx >= width) {
+		return;
+	}
+	if((idx & 1) != 0) { // odd
+		return;
+	}
+
+	for (int i = 0; i < height; i+=2) {
+		unsigned char r  = (src[i*width+idx+0] ) >> 2;
+		unsigned char g0 = (src[i*width+idx+1] ) >> 2;
+		unsigned char g1 = (src[(i+1)*width+idx+0] ) >> 2 ;
+		unsigned char b  = (src[(i+1)*width+idx+1] ) >> 2;
+
+		dst[i*width*4+idx*4+0] = b;
+		dst[i*width*4+idx*4+1] = g0;
+		dst[i*width*4+idx*4+2] = r;
+		dst[i*width*4+idx*4+3] = 0;
+		dst[i*width*4+idx*4+0+4] = b;
+		dst[i*width*4+idx*4+1+4] = g0;
+		dst[i*width*4+idx*4+2+4] = r;
+		dst[i*width*4+idx*4+3+4] = 0;
+		dst[(i+1)*width*4+idx*4+0] = b;
+		dst[(i+1)*width*4+idx*4+1] = g0;
+		dst[(i+1)*width*4+idx*4+2] = r;
+		dst[(i+1)*width*4+idx*4+3] = 0;
+		dst[(i+1)*width*4+idx*4+0+4] = b;
+		dst[(i+1)*width*4+idx*4+1+4] = g0;
+		dst[(i+1)*width*4+idx*4+2+4] = r;
+		dst[(i+1)*width*4+idx*4+3+4] = 0;
+	}
+}
 __global__ void gpuConvertrawtoRGB_kernel(unsigned char *src, unsigned char *dst,
 		unsigned int width, unsigned int height)
 {
@@ -161,6 +196,25 @@ void gpuConvertgraytoRGBA(unsigned char *src, unsigned char *dst,
 		unsigned int width, unsigned int height)
 {
 	unsigned char *d_src = NULL;
+	unsigned char *d_dst = NULL;
+
+	d_src = src;
+	cudaStreamAttachMemAsync(NULL, src, 0, cudaMemAttachGlobal);
+
+	d_dst = dst;
+	cudaStreamAttachMemAsync(NULL, dst, 0, cudaMemAttachGlobal);
+
+	unsigned int blockSize = 1024;
+	unsigned int numBlocks = (width + blockSize - 1) / blockSize;
+	gpuConvertgraytoRGBA_kernel<<<numBlocks, blockSize>>>(d_src, d_dst, width, height);
+	cudaStreamAttachMemAsync(NULL, dst, 0, cudaMemAttachHost);
+	cudaStreamSynchronize(NULL);
+}
+
+void gpuConvertgraytoRGBA(unsigned short *src, unsigned char *dst,
+		unsigned int width, unsigned int height)
+{
+	unsigned short *d_src = NULL;
 	unsigned char *d_dst = NULL;
 
 	d_src = src;

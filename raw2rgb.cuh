@@ -27,9 +27,11 @@ void gpuConvertrawtoRGB(unsigned char *src, unsigned char *dst,
 		unsigned int width, unsigned int height);
 void gpuConvertrawtoRGBA(unsigned char *src, unsigned char *dst,
 		unsigned int width, unsigned int height);
+void gpuConvertrawtoRGB(unsigned short *src, unsigned char *dst,
+		unsigned int width, unsigned int height);
 void gpuConvertgraytoRGBA(unsigned char *src, unsigned char *dst,
 		unsigned int width, unsigned int height);
-void gpuConvertrawtoRGB(unsigned short *src, unsigned char *dst,
+void gpuConvertgraytoRGBA(unsigned short *src, unsigned char *dst,
 		unsigned int width, unsigned int height);
 
 #endif

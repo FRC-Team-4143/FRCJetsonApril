@@ -20,10 +20,11 @@
 
 include ./Rules.mk
 
-APP := capture-cuda
+APP := capture-cuda 
 
 SRCS := \
 	capture.cpp \
+	capturestockrpiv2.cpp \
 	raw2rgb.cu
 
 ALL_CPPFLAGS := $(addprefix -Xcompiler ,$(filter-out -std=c++11, $(CPPFLAGS)))
@@ -35,9 +36,13 @@ GENCODE_SM72 := -gencode arch=compute_72,code=sm_72
 GENCODE_SM_PTX := -gencode arch=compute_72,code=compute_72
 GENCODE_FLAGS := $(GENCODE_SM53) $(GENCODE_SM62) $(GENCODE_SM72) $(GENCODE_SM_PTX)
 
-all: $(APP)
+all: $(APP) capturestockrpiv2
 
 capture.o: capture.cpp
+	@echo "Compiling: $<"
+	$(CPP) $(CPPFLAGS) -c $<
+
+capturestockrpiv2.o: capturestockrpiv2.cpp
 	@echo "Compiling: $<"
 	$(CPP) $(CPPFLAGS) -c $<
 
@@ -47,7 +52,11 @@ raw2rgb.o: raw2rgb.cu
 
 $(APP): capture.o raw2rgb.o
 	@echo "Linking: $@"
-	$(CPP) -o $@ $^ $(CPPFLAGS) $(LDFLAGS) libapril_tagging.a `pkg-config --libs opencv4`
+	$(CPP) -o $@ $^ $(CPPFLAGS) $(LDFLAGS) libapril_tagging16h5.a `pkg-config --libs opencv4`
+
+capturestockrpiv2: capturestockrpiv2.o raw2rgb.o
+	@echo "Linking: $@"
+	$(CPP) -o $@ $^ $(CPPFLAGS) $(LDFLAGS) libapril_tagging16h5.a `pkg-config --libs opencv4`
 
 clean:
 	$(AT) rm -f *.o $(APP)
