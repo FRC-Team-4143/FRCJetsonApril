@@ -56,7 +56,7 @@
 #include <opencv2/highgui.hpp>
 #include <opencv2/cudafilters.hpp>
 
-//#define APRILTAGS
+#define APRILTAGS
 #ifdef APRILTAGS
 #include "nvAprilTags.h"
 #include <eigen3/Eigen/Dense>
@@ -106,9 +106,6 @@ float tag_size = .16;  //same units as camera calib
 int max_tags = 5;
 
 nvAprilTagsImageInput_t input_image;
-
-// Size of image buffer
-//size_t input_image_buffer_size = 0;
 
 #endif
 
@@ -260,9 +257,9 @@ process_image (void *           p, double fps)
 
 #endif
 
-    if(count % 10 == 0) {
+    if(true || count % 10 == 0) {
         cv::Mat mat(height, width, CV_8UC4, cuda_out_buffer);
-#ifdef APRIL_TAGS
+#ifdef APRILTAGS
     	for (uint32_t i = 0; i < num_detections; i++) {
        		const nvAprilTagsID_t & detection = tags[i];
 
@@ -373,7 +370,7 @@ mainloop                        (void)
 
 	    time(&end);
 	    seconds = difftime (end, start);
-	    fps  = count / seconds;
+	    fps  = (double) count / seconds;
     }
 
 }
@@ -546,10 +543,10 @@ init_device                     (void)
 //    }
 
     ext_control.id = 0x009a2009; // gain
-    ext_control.value64 = 1000; 
+    ext_control.value64 = 10000; 
     //ext_control.value64 = 0; 
     if (-1 == xioctl (fd, VIDIOC_S_EXT_CTRLS, &ext_controls)) {
-        errno_exit ("VIDIOC_S_CTRL gain");
+       errno_exit ("VIDIOC_S_CTRL gain");
     }
 
     ext_control.id = 0x009a200a; // exposure
@@ -628,10 +625,8 @@ init_device                     (void)
 
     // Allocate the output vector to contain detected AprilTags.
     tags.resize(max_tags);
-//    input_image_buffer_size = width * height * 4 / 2 / 2 * sizeof(char);
 //    input_image.width = width/2;
 //    input_image.height = height/2;
-    //input_image_buffer_size = width * height * 4 * sizeof(char);
     input_image.width = width;
     input_image.height = height;
     input_image.pitch = 4; // not sure
