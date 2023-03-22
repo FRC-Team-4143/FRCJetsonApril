@@ -1,4 +1,4 @@
-diff -rupN tx2nxorig/hardware/nvidia/platform/t18x/lanai/kernel-dts/common/tegra186-camera-lanai-rbpcv2-ov9281.dtsi tx2nx/hardware/nvidia/platform/t18x/lanai/kernel-dts/common/tegra186-camera-lanai-rbpcv2-ov9281.dtsi
+diff -ruN tx2nxorig/hardware/nvidia/platform/t18x/lanai/kernel-dts/common/tegra186-camera-lanai-rbpcv2-ov9281.dtsi tx2nx/hardware/nvidia/platform/t18x/lanai/kernel-dts/common/tegra186-camera-lanai-rbpcv2-ov9281.dtsi
 --- tx2nxorig/hardware/nvidia/platform/t18x/lanai/kernel-dts/common/tegra186-camera-lanai-rbpcv2-ov9281.dtsi	1969-12-31 18:00:00.000000000 -0600
 +++ tx2nx/hardware/nvidia/platform/t18x/lanai/kernel-dts/common/tegra186-camera-lanai-rbpcv2-ov9281.dtsi	2022-10-22 23:53:56.871742929 -0500
 @@ -0,0 +1,57 @@
@@ -59,7 +59,7 @@ diff -rupN tx2nxorig/hardware/nvidia/platform/t18x/lanai/kernel-dts/common/tegra
 +		};
 +	};
 +};
-diff -rupN tx2nxorig/hardware/nvidia/platform/t18x/lanai/kernel-dts/common/tegra186-camera-rbpcv2-imx219.dtsi tx2nx/hardware/nvidia/platform/t18x/lanai/kernel-dts/common/tegra186-camera-rbpcv2-imx219.dtsi
+diff -ruN tx2nxorig/hardware/nvidia/platform/t18x/lanai/kernel-dts/common/tegra186-camera-rbpcv2-imx219.dtsi tx2nx/hardware/nvidia/platform/t18x/lanai/kernel-dts/common/tegra186-camera-rbpcv2-imx219.dtsi
 --- tx2nxorig/hardware/nvidia/platform/t18x/lanai/kernel-dts/common/tegra186-camera-rbpcv2-imx219.dtsi	2022-02-16 00:20:03.000000000 -0600
 +++ tx2nx/hardware/nvidia/platform/t18x/lanai/kernel-dts/common/tegra186-camera-rbpcv2-imx219.dtsi	2022-09-20 14:58:32.878246568 -0500
 @@ -201,6 +201,7 @@
@@ -392,7 +392,7 @@ diff -rupN tx2nxorig/hardware/nvidia/platform/t18x/lanai/kernel-dts/common/tegra
  		vi_peak_byte_per_pixel = <2>;
  		vi_bw_margin_pct = <25>;
  		max_pixel_rate = <240000>;
-diff -rupN tx2nxorig/hardware/nvidia/platform/t18x/lanai/kernel-dts/common/tegra186-camera-rbpcv2-ov9281.dtsi tx2nx/hardware/nvidia/platform/t18x/lanai/kernel-dts/common/tegra186-camera-rbpcv2-ov9281.dtsi
+diff -ruN tx2nxorig/hardware/nvidia/platform/t18x/lanai/kernel-dts/common/tegra186-camera-rbpcv2-ov9281.dtsi tx2nx/hardware/nvidia/platform/t18x/lanai/kernel-dts/common/tegra186-camera-rbpcv2-ov9281.dtsi
 --- tx2nxorig/hardware/nvidia/platform/t18x/lanai/kernel-dts/common/tegra186-camera-rbpcv2-ov9281.dtsi	1969-12-31 18:00:00.000000000 -0600
 +++ tx2nx/hardware/nvidia/platform/t18x/lanai/kernel-dts/common/tegra186-camera-rbpcv2-ov9281.dtsi	2022-11-08 13:07:12.247251063 -0600
 @@ -0,0 +1,344 @@
@@ -740,7 +740,7 @@ diff -rupN tx2nxorig/hardware/nvidia/platform/t18x/lanai/kernel-dts/common/tegra
 +		};
 +	};
 +};
-diff -rupN tx2nxorig/hardware/nvidia/platform/t18x/lanai/kernel-dts/tegra186-p3636-0001-p3509-0000-a01.dts tx2nx/hardware/nvidia/platform/t18x/lanai/kernel-dts/tegra186-p3636-0001-p3509-0000-a01.dts
+diff -ruN tx2nxorig/hardware/nvidia/platform/t18x/lanai/kernel-dts/tegra186-p3636-0001-p3509-0000-a01.dts tx2nx/hardware/nvidia/platform/t18x/lanai/kernel-dts/tegra186-p3636-0001-p3509-0000-a01.dts
 --- tx2nxorig/hardware/nvidia/platform/t18x/lanai/kernel-dts/tegra186-p3636-0001-p3509-0000-a01.dts	2022-02-16 00:20:03.000000000 -0600
 +++ tx2nx/hardware/nvidia/platform/t18x/lanai/kernel-dts/tegra186-p3636-0001-p3509-0000-a01.dts	2022-10-22 16:31:47.105106103 -0500
 @@ -16,7 +16,8 @@
@@ -753,7 +753,7 @@ diff -rupN tx2nxorig/hardware/nvidia/platform/t18x/lanai/kernel-dts/tegra186-p36
  
  /* plugin manager */
  #include "common/tegra186-super-module-e2614-p3509-0000-a00.dtsi"
-diff -rupN tx2nxorig/hardware/nvidia/platform/t18x/lanai/kernel-dts/tegra186-p3636-0002-p3509-0000-a01.dts tx2nx/hardware/nvidia/platform/t18x/lanai/kernel-dts/tegra186-p3636-0002-p3509-0000-a01.dts
+diff -ruN tx2nxorig/hardware/nvidia/platform/t18x/lanai/kernel-dts/tegra186-p3636-0002-p3509-0000-a01.dts tx2nx/hardware/nvidia/platform/t18x/lanai/kernel-dts/tegra186-p3636-0002-p3509-0000-a01.dts
 --- tx2nxorig/hardware/nvidia/platform/t18x/lanai/kernel-dts/tegra186-p3636-0002-p3509-0000-a01.dts	2022-02-16 00:20:03.000000000 -0600
 +++ tx2nx/hardware/nvidia/platform/t18x/lanai/kernel-dts/tegra186-p3636-0002-p3509-0000-a01.dts	2022-10-22 16:32:09.265058068 -0500
 @@ -16,7 +16,8 @@
@@ -766,9 +766,9 @@ diff -rupN tx2nxorig/hardware/nvidia/platform/t18x/lanai/kernel-dts/tegra186-p36
  
  /* plugin manager */
  #include "common/tegra186-super-module-e2614-p3509-0000-a00.dtsi"
-diff -rupN tx2nxorig/hardware/nvidia/platform/t19x/jakku/kernel-dts/common/tegra194-camera-jakku-rbpcv2-ov9281.dtsi tx2nx/hardware/nvidia/platform/t19x/jakku/kernel-dts/common/tegra194-camera-jakku-rbpcv2-ov9281.dtsi
+diff -ruN tx2nxorig/hardware/nvidia/platform/t19x/jakku/kernel-dts/common/tegra194-camera-jakku-rbpcv2-ov9281.dtsi tx2nx/hardware/nvidia/platform/t19x/jakku/kernel-dts/common/tegra194-camera-jakku-rbpcv2-ov9281.dtsi
 --- tx2nxorig/hardware/nvidia/platform/t19x/jakku/kernel-dts/common/tegra194-camera-jakku-rbpcv2-ov9281.dtsi	1969-12-31 18:00:00.000000000 -0600
-+++ tx2nx/hardware/nvidia/platform/t19x/jakku/kernel-dts/common/tegra194-camera-jakku-rbpcv2-ov9281.dtsi	2022-10-22 15:12:43.638909430 -0500
++++ tx2nx/hardware/nvidia/platform/t19x/jakku/kernel-dts/common/tegra194-camera-jakku-rbpcv2-ov9281.dtsi	2022-11-11 14:00:05.510647531 -0600
 @@ -0,0 +1,57 @@
 +/*
 + * Copyright (c) 2018-2020, NVIDIA CORPORATION.  All rights reserved.
@@ -804,7 +804,7 @@ diff -rupN tx2nxorig/hardware/nvidia/platform/t19x/jakku/kernel-dts/common/tegra
 +			reg = <0>;
 +			#address-cells = <1>;
 +			#size-cells = <0>;
-+			rbpcv2_imx219_a@50 {
++			rbpcv2_ov9281_a@60 {
 +				reset-gpios = <&tegra_main_gpio CAM0_PWDN GPIO_ACTIVE_HIGH>;
 +			};
 +		};
@@ -812,7 +812,7 @@ diff -rupN tx2nxorig/hardware/nvidia/platform/t19x/jakku/kernel-dts/common/tegra
 +			reg = <1>;
 +			#address-cells = <1>;
 +			#size-cells = <0>;
-+			rbpcv2_imx219_c@50 {
++			rbpcv2_ov9281_c@60 {
 +				reset-gpios = <&tegra_main_gpio CAM1_PWDN GPIO_ACTIVE_HIGH>;
 +			};
 +		};
@@ -827,9 +827,9 @@ diff -rupN tx2nxorig/hardware/nvidia/platform/t19x/jakku/kernel-dts/common/tegra
 +		};
 +	};
 +};
-diff -rupN tx2nxorig/hardware/nvidia/platform/t19x/jakku/kernel-dts/common/tegra194-camera-rbpcv2-imx219.dtsi tx2nx/hardware/nvidia/platform/t19x/jakku/kernel-dts/common/tegra194-camera-rbpcv2-imx219.dtsi
+diff -ruN tx2nxorig/hardware/nvidia/platform/t19x/jakku/kernel-dts/common/tegra194-camera-rbpcv2-imx219.dtsi tx2nx/hardware/nvidia/platform/t19x/jakku/kernel-dts/common/tegra194-camera-rbpcv2-imx219.dtsi
 --- tx2nxorig/hardware/nvidia/platform/t19x/jakku/kernel-dts/common/tegra194-camera-rbpcv2-imx219.dtsi	2022-02-16 00:20:03.000000000 -0600
-+++ tx2nx/hardware/nvidia/platform/t19x/jakku/kernel-dts/common/tegra194-camera-rbpcv2-imx219.dtsi	2022-09-15 21:00:20.481265628 -0500
++++ tx2nx/hardware/nvidia/platform/t19x/jakku/kernel-dts/common/tegra194-camera-rbpcv2-imx219.dtsi	2023-03-20 22:28:19.554739332 -0500
 @@ -382,46 +382,44 @@
  
  					embedded_metadata_height = "2";
@@ -998,10 +998,10 @@ diff -rupN tx2nxorig/hardware/nvidia/platform/t19x/jakku/kernel-dts/common/tegra
  
  				ports {
  					#address-cells = <1>;
-diff -rupN tx2nxorig/hardware/nvidia/platform/t19x/jakku/kernel-dts/common/tegra194-camera-rbpcv2-ov9281.dtsi tx2nx/hardware/nvidia/platform/t19x/jakku/kernel-dts/common/tegra194-camera-rbpcv2-ov9281.dtsi
+diff -ruN tx2nxorig/hardware/nvidia/platform/t19x/jakku/kernel-dts/common/tegra194-camera-rbpcv2-ov9281.dtsi tx2nx/hardware/nvidia/platform/t19x/jakku/kernel-dts/common/tegra194-camera-rbpcv2-ov9281.dtsi
 --- tx2nxorig/hardware/nvidia/platform/t19x/jakku/kernel-dts/common/tegra194-camera-rbpcv2-ov9281.dtsi	1969-12-31 18:00:00.000000000 -0600
-+++ tx2nx/hardware/nvidia/platform/t19x/jakku/kernel-dts/common/tegra194-camera-rbpcv2-ov9281.dtsi	2022-10-22 15:09:40.853439341 -0500
-@@ -0,0 +1,341 @@
++++ tx2nx/hardware/nvidia/platform/t19x/jakku/kernel-dts/common/tegra194-camera-rbpcv2-ov9281.dtsi	2023-03-20 22:29:13.271104267 -0500
+@@ -0,0 +1,344 @@
 +/*
 + * Copyright (c) 2018-2020, NVIDIA CORPORATION.  All rights reserved.
 + *
@@ -1094,10 +1094,11 @@ diff -rupN tx2nxorig/hardware/nvidia/platform/t19x/jakku/kernel-dts/common/tegra
 +			};
 +		};
 +	};
++
 +	cam_i2cmux {
 +		i2c_0:i2c@0 {
 +			ov9281_cam0: rbpcv2_ov9281_a@60 {
-+				compatible = “nvidia,ov9281”;
++				compatible = "nvidia,ov9281";
 +				/* I2C device address */
 +				reg = <0x60>;
 +
@@ -1121,7 +1122,7 @@ diff -rupN tx2nxorig/hardware/nvidia/platform/t19x/jakku/kernel-dts/common/tegra
 +				fsync = "none";/*none/slave/master/slave-trigger*/				
 +      
 +				mode0 { /* IMX219_MODE_1280x800_60FPS */
-+					mclk_khz = "26000";
++					mclk_khz = "24000";
 +					num_lanes = "2";
 +					tegra_sinterface = "serial_a";
 +					phy_mode = "DPHY";
@@ -1131,7 +1132,8 @@ diff -rupN tx2nxorig/hardware/nvidia/platform/t19x/jakku/kernel-dts/common/tegra
 +
 +					active_w = "1280";
 +					active_h = "800";
-+					pixel_t = "bayer_rggb10";
++					/*pixel_t = "bayer_rggb10";*/
++					pixel_t = "bayer_rggb";
 +					readout_orientation = "90";
 +		
 +					line_length = "1408";
@@ -1149,9 +1151,9 @@ diff -rupN tx2nxorig/hardware/nvidia/platform/t19x/jakku/kernel-dts/common/tegra
 +					step_gain_val = "1";
 +					default_gain = "16"; /* 1.00x */
 +					min_framerate = "1"; /* 2.0 fps */
-+					max_framerate = "65535"; /* 60.0 fps */
++					max_framerate = "120000"; /* 60.0 fps */
 +					step_framerate = "1";
-+					default_framerate = "64625"; /* 60.0 fps */
++					default_framerate = "120000"; /* 60.0 fps */
 +					min_exp_time = "1"; /* us */
 +					max_exp_time = "16777215"; /* us */
 +					step_exp_time = "1";
@@ -1176,7 +1178,7 @@ diff -rupN tx2nxorig/hardware/nvidia/platform/t19x/jakku/kernel-dts/common/tegra
 +		};
 +		i2c_1:i2c@1 {
 +			ov9281_cam1: rbpcv2_ov9281_c@60 {
-+				compatible = “nvidia,ov9281”;
++				compatible = "nvidia,ov9281";
 +				/* I2C device address */
 +				reg = <0x60>;
 +
@@ -1200,7 +1202,7 @@ diff -rupN tx2nxorig/hardware/nvidia/platform/t19x/jakku/kernel-dts/common/tegra
 +				fsync = "none";/*none/slave/master/slave-trigger*/				
 +      
 +				mode0 { /* IMX219_MODE_1280x720_60FPS */
-+					mclk_khz = "26000";
++					mclk_khz = "24000";
 +					num_lanes = "2";
 +					tegra_sinterface = "serial_a";
 +					phy_mode = "DPHY";
@@ -1210,7 +1212,8 @@ diff -rupN tx2nxorig/hardware/nvidia/platform/t19x/jakku/kernel-dts/common/tegra
 +
 +					active_w = "1280";
 +					active_h = "800";
-+					pixel_t = "bayer_rggb10";
++					/* pixel_t = "bayer_rggb10"; */
++					pixel_t = "bayer_rggb";
 +					readout_orientation = "90";
 +		
 +					line_length = "1408";
@@ -1343,20 +1346,42 @@ diff -rupN tx2nxorig/hardware/nvidia/platform/t19x/jakku/kernel-dts/common/tegra
 +		};
 +	};
 +};
-diff -rupN tx2nxorig/hardware/nvidia/platform/t19x/jakku/kernel-dts/Makefile tx2nx/hardware/nvidia/platform/t19x/jakku/kernel-dts/Makefile
+diff -ruN tx2nxorig/hardware/nvidia/platform/t19x/jakku/kernel-dts/common/tegra194-p3509-0000-a00.dtsi tx2nx/hardware/nvidia/platform/t19x/jakku/kernel-dts/common/tegra194-p3509-0000-a00.dtsi
+--- tx2nxorig/hardware/nvidia/platform/t19x/jakku/kernel-dts/common/tegra194-p3509-0000-a00.dtsi	2022-02-16 00:20:03.000000000 -0600
++++ tx2nx/hardware/nvidia/platform/t19x/jakku/kernel-dts/common/tegra194-p3509-0000-a00.dtsi	2023-03-20 22:20:47.463238442 -0500
+@@ -16,8 +16,9 @@
+ #include "tegra194-p3509-disp.dtsi"
+ #include "tegra194-audio-p3668.dtsi"
+ #include "tegra194-super-module-e2614-p3509.dtsi"
+-#include "tegra194-camera-jakku-rbpcv3-imx477.dtsi"
+-#include "tegra194-camera-jakku-rbpcv2-imx219.dtsi"
++/* #include "tegra194-camera-jakku-rbpcv3-imx477.dtsi" RJS */
++/* #include "tegra194-camera-jakku-rbpcv2-imx219.dtsi" RJS */
++#include "tegra194-camera-jakku-rbpcv2-ov9281.dtsi"
+ / {
+ 	gpio-keys {
+ 		compatible = "gpio-keys";
+diff -ruN tx2nxorig/hardware/nvidia/platform/t19x/jakku/kernel-dts/Makefile tx2nx/hardware/nvidia/platform/t19x/jakku/kernel-dts/Makefile
 --- tx2nxorig/hardware/nvidia/platform/t19x/jakku/kernel-dts/Makefile	2022-02-16 00:20:03.000000000 -0600
-+++ tx2nx/hardware/nvidia/platform/t19x/jakku/kernel-dts/Makefile	2022-10-22 15:15:23.748330431 -0500
-@@ -16,6 +16,7 @@ dtbo-$(CONFIG_ARCH_TEGRA_19x_SOC) += teg
- dtbo-$(CONFIG_ARCH_TEGRA_19x_SOC) += tegra194-p3668-all-p3509-0000-camera-imx477-imx219.dtbo
- dtbo-$(CONFIG_ARCH_TEGRA_19x_SOC) += tegra194-p3668-all-p3509-0000-camera-imx477-dual.dtbo
- dtbo-$(CONFIG_ARCH_TEGRA_19x_SOC) += tegra194-p3668-all-p3509-0000-camera-imx219-dual.dtbo
-+dtbo-$(CONFIG_ARCH_TEGRA_19x_SOC) += tegra194-p3668-all-p3509-0000-camera-ov9281-dual.dtbo
++++ tx2nx/hardware/nvidia/platform/t19x/jakku/kernel-dts/Makefile	2023-03-21 09:57:54.698857220 -0500
+@@ -13,9 +13,11 @@
+ dtbo-$(CONFIG_ARCH_TEGRA_19x_SOC) += tegra194-p3668-all-p3509-0000-respeaker-4-mic-array.dtbo
+ dtbo-$(CONFIG_ARCH_TEGRA_19x_SOC) += tegra194-p3668-all-p3509-0000-respeaker-4-mic-lin-array.dtbo
+ dtbo-$(CONFIG_ARCH_TEGRA_19x_SOC) += tegra194-p3668-all-p3509-0000-m2ke.dtbo
+-dtbo-$(CONFIG_ARCH_TEGRA_19x_SOC) += tegra194-p3668-all-p3509-0000-camera-imx477-imx219.dtbo
+-dtbo-$(CONFIG_ARCH_TEGRA_19x_SOC) += tegra194-p3668-all-p3509-0000-camera-imx477-dual.dtbo
+-dtbo-$(CONFIG_ARCH_TEGRA_19x_SOC) += tegra194-p3668-all-p3509-0000-camera-imx219-dual.dtbo
++#dtbo-$(CONFIG_ARCH_TEGRA_19x_SOC) += tegra194-p3668-all-p3509-0000-camera-imx477-imx219.dtbo # RJS
++#dtbo-$(CONFIG_ARCH_TEGRA_19x_SOC) += tegra194-p3668-all-p3509-0000-camera-imx477-dual.dtbo # RJS
++#dtbo-$(CONFIG_ARCH_TEGRA_19x_SOC) += tegra194-p3668-all-p3509-0000-camera-imx219-dual.dtbo # RJS
++#RJS
++dtbo-$(CONFIG_ARCH_TEGRA_19x_SOC) += tegra194-p3668-all-p3509-0000-camera-ov9281-dual.dtbo 
  
  ifneq ($(dtb-y),)
  dtb-y := $(addprefix $(makefile-path)/,$(dtb-y))
-diff -rupN tx2nxorig/hardware/nvidia/platform/t19x/jakku/kernel-dts/tegra194-p3668-all-p3509-0000-camera-ov9281-dual.dts tx2nx/hardware/nvidia/platform/t19x/jakku/kernel-dts/tegra194-p3668-all-p3509-0000-camera-ov9281-dual.dts
+diff -ruN tx2nxorig/hardware/nvidia/platform/t19x/jakku/kernel-dts/tegra194-p3668-all-p3509-0000-camera-ov9281-dual.dts tx2nx/hardware/nvidia/platform/t19x/jakku/kernel-dts/tegra194-p3668-all-p3509-0000-camera-ov9281-dual.dts
 --- tx2nxorig/hardware/nvidia/platform/t19x/jakku/kernel-dts/tegra194-p3668-all-p3509-0000-camera-ov9281-dual.dts	1969-12-31 18:00:00.000000000 -0600
-+++ tx2nx/hardware/nvidia/platform/t19x/jakku/kernel-dts/tegra194-p3668-all-p3509-0000-camera-ov9281-dual.dts	2022-10-22 15:18:33.429751612 -0500
++++ tx2nx/hardware/nvidia/platform/t19x/jakku/kernel-dts/tegra194-p3668-all-p3509-0000-camera-ov9281-dual.dts	2023-03-21 09:57:06.230613809 -0500
 @@ -0,0 +1,115 @@
 +// SPDX-License-Identifier: GPL-2.0-only
 +/*

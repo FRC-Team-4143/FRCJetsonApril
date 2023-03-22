@@ -1,7 +1,7 @@
-diff -rupN tx2nxorig/kernel/nvidia/drivers/media/i2c/imx219_mode_tbls.h tx2nx/kernel/nvidia/drivers/media/i2c/imx219_mode_tbls.h
+diff -ruN tx2nxorig/kernel/nvidia/drivers/media/i2c/imx219_mode_tbls.h tx2nx/kernel/nvidia/drivers/media/i2c/imx219_mode_tbls.h
 --- tx2nxorig/kernel/nvidia/drivers/media/i2c/imx219_mode_tbls.h	2022-02-16 00:20:23.000000000 -0600
 +++ tx2nx/kernel/nvidia/drivers/media/i2c/imx219_mode_tbls.h	2022-09-20 23:59:28.863491815 -0500
-@@ -93,8 +93,10 @@ static imx219_reg imx219_mode_3264x2464_
+@@ -93,8 +93,10 @@
  	{0x0171, 0x01},
  	{0x0174, 0x00},
  	{0x0175, 0x00},
@@ -14,7 +14,7 @@ diff -rupN tx2nxorig/kernel/nvidia/drivers/media/i2c/imx219_mode_tbls.h tx2nx/ke
  	{0x0264, 0x00},
  	{0x0265, 0x08},
  	{0x0266, 0x0C},
-@@ -108,7 +110,8 @@ static imx219_reg imx219_mode_3264x2464_
+@@ -108,7 +110,8 @@
  	{0x0305, 0x03},
  	{0x0306, 0x00},
  	{0x0307, 0x39},
@@ -24,7 +24,7 @@ diff -rupN tx2nxorig/kernel/nvidia/drivers/media/i2c/imx219_mode_tbls.h tx2nx/ke
  	{0x030B, 0x01},
  	{0x030C, 0x00},
  	{0x030D, 0x72},
-@@ -141,8 +144,10 @@ static imx219_reg imx219_mode_3264x1848_
+@@ -141,8 +144,10 @@
  	{0x0171, 0x01},
  	{0x0174, 0x00},
  	{0x0175, 0x00},
@@ -37,7 +37,7 @@ diff -rupN tx2nxorig/kernel/nvidia/drivers/media/i2c/imx219_mode_tbls.h tx2nx/ke
  	{0x0264, 0x00},
  	{0x0265, 0x08},
  	{0x0266, 0x0C},
-@@ -156,7 +161,8 @@ static imx219_reg imx219_mode_3264x1848_
+@@ -156,7 +161,8 @@
  	{0x0305, 0x03},
  	{0x0306, 0x00},
  	{0x0307, 0x39},
@@ -47,7 +47,7 @@ diff -rupN tx2nxorig/kernel/nvidia/drivers/media/i2c/imx219_mode_tbls.h tx2nx/ke
  	{0x030B, 0x01},
  	{0x030C, 0x00},
  	{0x030D, 0x72},
-@@ -189,8 +195,10 @@ static imx219_reg imx219_mode_1920x1080_
+@@ -189,8 +195,10 @@
  	{0x0171, 0x01},
  	{0x0174, 0x00},
  	{0x0175, 0x00},
@@ -60,7 +60,7 @@ diff -rupN tx2nxorig/kernel/nvidia/drivers/media/i2c/imx219_mode_tbls.h tx2nx/ke
  	/* clocks dividers */
  	{0x0301, 0x05},
  	{0x0303, 0x01},
-@@ -198,7 +206,8 @@ static imx219_reg imx219_mode_1920x1080_
+@@ -198,7 +206,8 @@
  	{0x0305, 0x03},
  	{0x0306, 0x00},
  	{0x0307, 0x39},
@@ -70,7 +70,7 @@ diff -rupN tx2nxorig/kernel/nvidia/drivers/media/i2c/imx219_mode_tbls.h tx2nx/ke
  	{0x030B, 0x01},
  	{0x030C, 0x00},
  	{0x030D, 0x72},
-@@ -231,8 +240,10 @@ static imx219_reg imx219_mode_1640x1232_
+@@ -231,8 +240,10 @@
  	{0x0171, 0x01},
  	{0x0174, 0x01},
  	{0x0175, 0x01},
@@ -83,7 +83,7 @@ diff -rupN tx2nxorig/kernel/nvidia/drivers/media/i2c/imx219_mode_tbls.h tx2nx/ke
  	/* clocks dividers */
  	{0x0301, 0x05},
  	{0x0303, 0x01},
-@@ -240,23 +251,25 @@ static imx219_reg imx219_mode_1640x1232_
+@@ -240,23 +251,25 @@
  	{0x0305, 0x03},
  	{0x0306, 0x00},
  	{0x0307, 0x39},
@@ -119,7 +119,7 @@ diff -rupN tx2nxorig/kernel/nvidia/drivers/media/i2c/imx219_mode_tbls.h tx2nx/ke
  	{0x0164, 0x01},
  	{0x0165, 0x68},
  	{0x0166, 0x0B},
-@@ -273,33 +286,37 @@ static imx219_reg imx219_mode_1280x720_6
+@@ -273,33 +286,37 @@
  	{0x0171, 0x01},
  	{0x0174, 0x01},
  	{0x0175, 0x01},
@@ -168,7 +168,7 @@ diff -rupN tx2nxorig/kernel/nvidia/drivers/media/i2c/imx219_mode_tbls.h tx2nx/ke
  	{0x0164, 0x01},
  	{0x0165, 0x68},
  	{0x0166, 0x0B},
-@@ -313,31 +330,35 @@ static imx219_reg imx219_mode_1280x720_1
+@@ -313,31 +330,35 @@
  	{0x016E, 0x02},
  	{0x016F, 0xD0},
  	{0x0170, 0x01},
@@ -214,7 +214,7 @@ diff -rupN tx2nxorig/kernel/nvidia/drivers/media/i2c/imx219_mode_tbls.h tx2nx/ke
  
  	IMX219_MODE_COMMON,
  	IMX219_START_STREAM,
-@@ -349,7 +370,8 @@ static imx219_reg *mode_table[] = {
+@@ -349,7 +370,8 @@
  	[IMX219_MODE_3264x1848_28FPS] = imx219_mode_3264x1848_28fps,
  	[IMX219_MODE_1920x1080_30FPS] = imx219_mode_1920x1080_30fps,
  	[IMX219_MODE_1640x1232_30FPS] = imx219_mode_1640x1232_30fps,
@@ -224,7 +224,7 @@ diff -rupN tx2nxorig/kernel/nvidia/drivers/media/i2c/imx219_mode_tbls.h tx2nx/ke
  
  	[IMX219_MODE_COMMON]  = imx219_mode_common,
  	[IMX219_START_STREAM]  = imx219_start_stream,
-@@ -368,9 +390,15 @@ static const int imx219_30fps[] = {
+@@ -368,9 +390,15 @@
  	30,
  };
  
@@ -240,7 +240,7 @@ diff -rupN tx2nxorig/kernel/nvidia/drivers/media/i2c/imx219_mode_tbls.h tx2nx/ke
  
  /*
   * WARNING: frmfmt ordering need to match mode definition in
-@@ -382,7 +410,8 @@ static const struct camera_common_frmfmt
+@@ -382,7 +410,8 @@
  	{{3264, 1848},	imx219_28fps, 1, 0, IMX219_MODE_3264x1848_28FPS},
  	{{1920, 1080},	imx219_30fps, 1, 0, IMX219_MODE_1920x1080_30FPS},
  	{{1640, 1232},	imx219_30fps, 1, 0, IMX219_MODE_1640x1232_30FPS},
@@ -250,7 +250,7 @@ diff -rupN tx2nxorig/kernel/nvidia/drivers/media/i2c/imx219_mode_tbls.h tx2nx/ke
  };
  
  #endif /* __IMX219_I2C_TABLES__ */
-diff -rupN tx2nxorig/kernel/nvidia/drivers/media/i2c/ov9281.c tx2nx/kernel/nvidia/drivers/media/i2c/ov9281.c
+diff -ruN tx2nxorig/kernel/nvidia/drivers/media/i2c/ov9281.c tx2nx/kernel/nvidia/drivers/media/i2c/ov9281.c
 --- tx2nxorig/kernel/nvidia/drivers/media/i2c/ov9281.c	2022-02-16 00:20:23.000000000 -0600
 +++ tx2nx/kernel/nvidia/drivers/media/i2c/ov9281.c	2022-11-08 13:12:15.900264012 -0600
 @@ -15,10 +15,12 @@
@@ -301,7 +301,7 @@ diff -rupN tx2nxorig/kernel/nvidia/drivers/media/i2c/ov9281.c tx2nx/kernel/nvidi
  struct ov9281 {
  	struct camera_common_power_rail	power;
  	int				num_ctrls;
-@@ -129,9 +150,128 @@ struct ov9281 {
+@@ -129,9 +150,128 @@
  	struct regmap			*regmap;
  	struct camera_common_data	*s_data;
  	struct camera_common_pdata	*pdata;
@@ -430,7 +430,7 @@ diff -rupN tx2nxorig/kernel/nvidia/drivers/media/i2c/ov9281.c tx2nx/kernel/nvidi
  /* Register/regmap stuff */
  static int ov9281_read_reg(struct camera_common_data *s_data, u16 addr, u8 *val)
  {
-@@ -1146,9 +1286,16 @@ static int ov9281_probe(struct i2c_clien
+@@ -1146,9 +1286,16 @@
  	struct camera_common_data *common_data;
  	struct device *dev = &client->dev;
  	struct ov9281 *priv;
@@ -448,7 +448,7 @@ diff -rupN tx2nxorig/kernel/nvidia/drivers/media/i2c/ov9281.c tx2nx/kernel/nvidi
  
  	common_data = devm_kzalloc(dev, sizeof(*common_data), GFP_KERNEL);
  
-@@ -1162,6 +1309,82 @@ static int ov9281_probe(struct i2c_clien
+@@ -1162,6 +1309,82 @@
  		return -ENOMEM;
  	}
  
@@ -531,7 +531,7 @@ diff -rupN tx2nxorig/kernel/nvidia/drivers/media/i2c/ov9281.c tx2nx/kernel/nvidi
  	priv->regmap = devm_regmap_init_i2c(client, &ov9281_regmap_config);
  	if (IS_ERR(priv->regmap)) {
  		dev_err(dev, "regmap init failed %ld\n", PTR_ERR(priv->regmap));
-diff -rupN tx2nxorig/kernel/nvidia/drivers/media/i2c/ov9281_mode_tbls.h tx2nx/kernel/nvidia/drivers/media/i2c/ov9281_mode_tbls.h
+diff -ruN tx2nxorig/kernel/nvidia/drivers/media/i2c/ov9281_mode_tbls.h tx2nx/kernel/nvidia/drivers/media/i2c/ov9281_mode_tbls.h
 --- tx2nxorig/kernel/nvidia/drivers/media/i2c/ov9281_mode_tbls.h	2022-02-16 00:20:23.000000000 -0600
 +++ tx2nx/kernel/nvidia/drivers/media/i2c/ov9281_mode_tbls.h	2022-11-07 21:12:00.370616961 -0600
 @@ -28,8 +28,8 @@
@@ -545,7 +545,7 @@ diff -rupN tx2nxorig/kernel/nvidia/drivers/media/i2c/ov9281_mode_tbls.h tx2nx/ke
  	OV9281_MODE_START_STREAM,
  	OV9281_MODE_STOP_STREAM,
  };
-@@ -74,6 +74,7 @@ static const ov9281_reg ov9281_fsync_sla
+@@ -74,6 +74,7 @@
  	{ OV9281_TABLE_END, 0x00 }
  };
  
@@ -553,7 +553,7 @@ diff -rupN tx2nxorig/kernel/nvidia/drivers/media/i2c/ov9281_mode_tbls.h tx2nx/ke
  static const ov9281_reg ov9281_mode_1280x800_26MhzMCLK[] = {
  	/* PLL control */
  	{ 0x0302, 0x32 },
-@@ -225,7 +226,116 @@ static const ov9281_reg ov9281_mode_1280
+@@ -225,7 +226,116 @@
  	{ 0x3827, 0x8a },
  	{ OV9281_TABLE_END, 0x00 }
  };
@@ -670,7 +670,7 @@ diff -rupN tx2nxorig/kernel/nvidia/drivers/media/i2c/ov9281_mode_tbls.h tx2nx/ke
  static const ov9281_reg ov9281_mode_1280x720_26MhzMCLK[] = {
  	{ 0x0302, 0x32 },
  	{ 0x030d, 0x50 },
-@@ -437,19 +547,22 @@ static const ov9281_reg ov9281_mode_640x
+@@ -437,19 +547,22 @@
  	{ 0x3827, 0x04 },
  	{ OV9281_TABLE_END, 0x00 }
  };
@@ -697,7 +697,7 @@ diff -rupN tx2nxorig/kernel/nvidia/drivers/media/i2c/ov9281_mode_tbls.h tx2nx/ke
  };
  
  static const ov9281_reg *ov9281_fsync_table[] = {
-@@ -462,13 +575,19 @@ static const int ov9281_60fps[] = {
+@@ -462,13 +575,19 @@
  	60,
  };
  
@@ -719,10 +719,10 @@ diff -rupN tx2nxorig/kernel/nvidia/drivers/media/i2c/ov9281_mode_tbls.h tx2nx/ke
  };
  
  #endif  /* __OV9281_I2C_TABLES__ */
-diff -rupN tx2nxorig/kernel/nvidia/drivers/media/platform/tegra/camera/camera_common.c tx2nx/kernel/nvidia/drivers/media/platform/tegra/camera/camera_common.c
+diff -ruN tx2nxorig/kernel/nvidia/drivers/media/platform/tegra/camera/camera_common.c tx2nx/kernel/nvidia/drivers/media/platform/tegra/camera/camera_common.c
 --- tx2nxorig/kernel/nvidia/drivers/media/platform/tegra/camera/camera_common.c	2022-02-16 00:20:23.000000000 -0600
 +++ tx2nx/kernel/nvidia/drivers/media/platform/tegra/camera/camera_common.c	2022-11-08 13:22:37.893472298 -0600
-@@ -126,6 +126,24 @@ static const struct camera_common_colorf
+@@ -126,6 +126,24 @@
  		V4L2_COLORSPACE_SRGB,
  		V4L2_PIX_FMT_VYUY,
  	},
@@ -747,10 +747,10 @@ diff -rupN tx2nxorig/kernel/nvidia/drivers/media/platform/tegra/camera/camera_co
  	/*
  	 * The below two formats are not supported by VI4,
  	 * keep them at the last to ensure they get discarded
-diff -rupN tx2nxorig/kernel/nvidia/drivers/media/platform/tegra/camera/sensor_common.c tx2nx/kernel/nvidia/drivers/media/platform/tegra/camera/sensor_common.c
+diff -ruN tx2nxorig/kernel/nvidia/drivers/media/platform/tegra/camera/sensor_common.c tx2nx/kernel/nvidia/drivers/media/platform/tegra/camera/sensor_common.c
 --- tx2nxorig/kernel/nvidia/drivers/media/platform/tegra/camera/sensor_common.c	2022-02-16 00:20:23.000000000 -0600
 +++ tx2nx/kernel/nvidia/drivers/media/platform/tegra/camera/sensor_common.c	2022-11-08 13:20:58.838432234 -0600
-@@ -197,7 +197,9 @@ static int extract_pixel_format(
+@@ -197,7 +197,9 @@
  {
  	size_t size = strnlen(pixel_t, OF_MAX_STR_LEN);
  
@@ -761,7 +761,7 @@ diff -rupN tx2nxorig/kernel/nvidia/drivers/media/platform/tegra/camera/sensor_co
  		*format = V4L2_PIX_FMT_SBGGR10;
  	else if (strncmp(pixel_t, "bayer_rggb10", size) == 0)
  		*format = V4L2_PIX_FMT_SRGGB10;
-@@ -235,6 +237,12 @@ static int extract_pixel_format(
+@@ -235,6 +237,12 @@
  		*format = V4L2_PIX_FMT_UYVY;
  	else if (strncmp(pixel_t, "yuv_vyuy16", size) == 0)
  		*format = V4L2_PIX_FMT_VYUY;
