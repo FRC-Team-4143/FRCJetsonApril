@@ -15,6 +15,16 @@ https://github.com/NVIDIA-ISAAC-ROS/isaac_ros_nitros/blob/main/isaac_ros_nitros/
 bspatch libcuapriltags.a libcuapriltags16h5.a libcuapriltags16h5.a.bspatch
 
 
+see orinnanooverlaycmd.sh to set kernel overlay.
+
+
+capturestockrpiv2 should read 16H5 tags. tested with both RPIv2 camera and an Arducam IMX219 on a Jetson Orin Nano devkit with stock kernel on JetPack 5.1.1.
+
+
+
+
+
+
 
 #THE FOLLOWING LIBRARIES DO NOT SUPPORT ORIN
 
