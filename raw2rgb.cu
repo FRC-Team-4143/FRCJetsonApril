@@ -120,17 +120,17 @@ __global__ void gpuConvertrawtoRGB_kernel(unsigned short *src, unsigned char *ds
 	}
 
 	for (int i = 0; i < height; i+=2) {
-		unsigned char r  = (src[i*width+idx+0] ) >> 2;
-		unsigned char g0 = (src[i*width+idx+1] ) >> 2;
-		unsigned char g1 = (src[(i+1)*width+idx+0] ) >> 2 ;
-		unsigned char b  = (src[(i+1)*width+idx+1] ) >> 2;
+		unsigned char r  = src[i*width+idx+0] >> 7;
+		unsigned char g0 = src[i*width+idx+1] >> 8;
+		unsigned char g1 = src[(i+1)*width+idx+0] >> 9;
+		unsigned char b  = src[(i+1)*width+idx+1] >> 7;
 
 		// green detection
 		//if(g0 < 0x30 || r > 0x30 || b > 0x30) g0 = r = b = 0;
 		//else { g0 = 0xff; r = b = 0;}
 		
 		dst[(i/2)*width/2*3+(idx/2)*3+0] = b;
-		dst[(i/2)*width/2*3+(idx/2)*3+1] = ((g0 + g1)/2);
+		dst[(i/2)*width/2*3+(idx/2)*3+1] = g0 + g1;
 		dst[(i/2)*width/2*3+(idx/2)*3+2] = r;
 	}
 }

@@ -97,7 +97,7 @@ CPPFLAGS += -std=c++11 \
 	-I"$(TARGET_ROOTFS)/$(CUDA_PATH)/include" \
 	-I"$(TARGET_ROOTFS)/usr/include/$(TEGRA_ARMABI)" \
 	-I"$(TARGET_ROOTFS)/usr/include/libdrm" \
-	-I"$(TARGET_ROOTFS)/usr/include/opencv4"
+	-I"$(TARGET_ROOTFS)/usr/local/include/opencv4"
 
 # All common dependent libraries
 LDFLAGS += \
