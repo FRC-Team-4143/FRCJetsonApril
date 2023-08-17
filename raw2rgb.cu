@@ -46,6 +46,38 @@ __global__ void gpuConvertgraytoRGBA_kernel(unsigned char *src, unsigned char *d
 		dst[i*width*4+idx*4+3] = 0;
 	}
 }
+__global__ void gpuConvertgraytoRGB_kernel(unsigned char *src, unsigned char *dst,
+		unsigned int width, unsigned int height)
+{
+	int idx = blockIdx.x * blockDim.x + threadIdx.x;
+	if (idx >= width) {
+		return;
+	}
+
+	for (int i = 0; i < height; i+=1) {
+		unsigned char gray = (src[i*width+idx+0] );
+
+		dst[i*width*3+idx*3+0] = gray;
+		dst[i*width*3+idx*3+1] = gray;
+		dst[i*width*3+idx*3+2] = gray;
+	}
+}
+__global__ void gpuConvertgraytoRGB_kernel(unsigned short *src, unsigned char *dst,
+		unsigned int width, unsigned int height)
+{
+	int idx = blockIdx.x * blockDim.x + threadIdx.x;
+	if (idx >= width) {
+		return;
+	}
+
+	for (int i = 0; i < height; i+=1) {
+		unsigned char gray = (src[i*width+idx+0] ) >> 2;;
+
+		dst[i*width*3+idx*3+0] = gray;
+		dst[i*width*3+idx*3+1] = gray;
+		dst[i*width*3+idx*3+2] = gray;
+	}
+}
 __global__ void gpuConvertgraytoRGBA_kernel(unsigned short *src, unsigned char *dst,
 		unsigned int width, unsigned int height)
 {
@@ -207,6 +239,44 @@ void gpuConvertgraytoRGBA(unsigned char *src, unsigned char *dst,
 	unsigned int blockSize = 1024;
 	unsigned int numBlocks = (width + blockSize - 1) / blockSize;
 	gpuConvertgraytoRGBA_kernel<<<numBlocks, blockSize>>>(d_src, d_dst, width, height);
+	cudaStreamAttachMemAsync(NULL, dst, 0, cudaMemAttachHost);
+	cudaStreamSynchronize(NULL);
+}
+
+void gpuConvertgraytoRGB(unsigned char *src, unsigned char *dst,
+		unsigned int width, unsigned int height)
+{
+	unsigned char *d_src = NULL;
+	unsigned char *d_dst = NULL;
+
+	d_src = src;
+	cudaStreamAttachMemAsync(NULL, src, 0, cudaMemAttachGlobal);
+
+	d_dst = dst;
+	cudaStreamAttachMemAsync(NULL, dst, 0, cudaMemAttachGlobal);
+
+	unsigned int blockSize = 1024;
+	unsigned int numBlocks = (width + blockSize - 1) / blockSize;
+	gpuConvertgraytoRGB_kernel<<<numBlocks, blockSize>>>(d_src, d_dst, width, height);
+	cudaStreamAttachMemAsync(NULL, dst, 0, cudaMemAttachHost);
+	cudaStreamSynchronize(NULL);
+}
+
+void gpuConvertgraytoRGB(unsigned short *src, unsigned char *dst,
+		unsigned int width, unsigned int height)
+{
+	unsigned short *d_src = NULL;
+	unsigned char *d_dst = NULL;
+
+	d_src = src;
+	cudaStreamAttachMemAsync(NULL, src, 0, cudaMemAttachGlobal);
+
+	d_dst = dst;
+	cudaStreamAttachMemAsync(NULL, dst, 0, cudaMemAttachGlobal);
+
+	unsigned int blockSize = 1024;
+	unsigned int numBlocks = (width + blockSize - 1) / blockSize;
+	gpuConvertgraytoRGB_kernel<<<numBlocks, blockSize>>>(d_src, d_dst, width, height);
 	cudaStreamAttachMemAsync(NULL, dst, 0, cudaMemAttachHost);
 	cudaStreamSynchronize(NULL);
 }

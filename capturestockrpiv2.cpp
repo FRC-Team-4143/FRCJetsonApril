@@ -47,7 +47,9 @@
 #include <time.h>
 #include <linux/videodev2.h>
 
+#include <npp.h>
 #include <cuda_runtime.h>
+#include "helper_cuda.h"
 
 #define opencv
 #ifdef opencv
@@ -55,12 +57,14 @@
 #include <opencv2/imgproc.hpp>
 #include <opencv2/highgui.hpp>
 #include <opencv2/cudafilters.hpp>
+#include <opencv2/core/utility.hpp>
 
 #define APRILTAGS
 #ifdef APRILTAGS
 #include "cuAprilTags.h"
 #include <eigen3/Eigen/Dense>
 #endif
+
 
 //#define CALIB
 #ifdef CALIB
@@ -156,11 +160,23 @@ xioctl                          (int                    fd,
 static void
 process_image (void *           p, double fps)
 {
-    gpuConvertrawtoRGB ((unsigned short *) p, cuda_out_buffer, width, height);
+    NppiSize osize;
+    osize.width = width;
+    osize.height = height;
+    NppiRect orect;
+    orect.x = 0;
+    orect.y = 0;
+    orect.width = width;
+    orect.height = height;
+
+    NppStatus eStatusNPP; 
+    //gpuConvertrawtoRGB ((unsigned short *) p, cuda_out_buffer, width, height);
     //gpuConvertrawtoRGB ((unsigned char *) p, cuda_out_buffer, width, height);
     //gpuConvertrawtoRGBA ((unsigned char *) p, cuda_out_buffer, width, height);
     //gpuConvertgraytoRGBA ((unsigned char *) p, cuda_out_buffer, width, height);
     //gpuConvertgraytoRGB ((unsigned short *) p, cuda_out_buffer, width, height);
+    eStatusNPP = nppiCFAToRGB_16u_C1C3R((Npp16u*) p, width*sizeof(short), osize, orect, (Npp16u*) cuda_out_buffer, width*3*sizeof(short), NPPI_BAYER_RGGB, NPPI_INTER_UNDEFINED);
+    if (eStatusNPP != NPP_SUCCESS) std::cout << "NPP_CHECK_NPP - eStatusNPP = " << _cudaGetErrorEnum(eStatusNPP) << "("<< eStatusNPP << ")" << std::endl;
 
     /* Save image. */
     /*
@@ -174,14 +190,16 @@ process_image (void *           p, double fps)
     */
 
 #ifdef opencv
-    cv::cuda::GpuMat d_mat(height / 2, width / 2, CV_8UC3, cuda_out_buffer);
-    //cv::cuda::GpuMat d_mat(height, width, CV_8UC3, cuda_out_buffer);
+    //cv::cuda::GpuMat d_mat(height / 2, width / 2, CV_8UC3, cuda_out_buffer);
+    cv::cuda::GpuMat d_16mat(height, width, CV_16UC3, cuda_out_buffer);
+    cv::cuda::GpuMat d_mat;
+    d_16mat.convertTo(d_mat, CV_8UC3, 1/64.0);
 
 #ifdef CALIB
     cv::Mat gray;
     if(count % 10 == 0) {
-            cv::Mat mat(height  / 2, width / 2, CV_8UC3, cuda_out_buffer);
-            //cv::Mat mat(height, width, CV_8UC3, cuda_out_buffer);
+            //cv::Mat mat(height  / 2, width / 2, CV_8UC3, cuda_out_buffer);
+            cv::Mat mat(height, width, CV_16UC3, cuda_out_buffer);
 	    cv::cvtColor(mat, gray, cv::COLOR_BGRA2GRAY);
 
 	    bool found = false;
@@ -225,8 +243,11 @@ process_image (void *           p, double fps)
 
 #ifdef APRILTAGS
     uint32_t num_detections;
-    input_image.dev_ptr = (uchar3*)cuda_out_buffer;
-    input_image.pitch = d_mat.step;
+    //input_image.dev_ptr = (uchar3*)cuda_out_buffer;
+    input_image.dev_ptr = (uchar3*) d_mat.data;
+    //input_image.pitch = d_mat.step;
+    input_image.pitch = width*3;
+    std::cout << input_image.pitch << std::endl;
     cudaStreamAttachMemAsync(main_stream, input_image.dev_ptr, 0, cudaMemAttachGlobal);
     const int error = cuAprilTagsDetect(
       april_tags_handle, &input_image, tags.data(),
@@ -264,8 +285,9 @@ process_image (void *           p, double fps)
     if(count % 10 == 0) {
         std::string str = "fps: " + std::to_string(fps);
 	if(true) {
-		//cv::Mat mat(height, width, CV_8UC3, cuda_out_buffer);
-		cv::Mat mat(height / 2, width / 2, CV_8UC3, cuda_out_buffer);
+		cv::Mat mat(d_mat);
+		//cv::Mat mat(height / 2, width / 2, CV_8UC3, cuda_out_buffer);
+		cv::cvtColor(mat, mat, cv::COLOR_RGB2BGR);
 #ifdef APRILTAGS
 		for (uint32_t i = 0; i < num_detections; i++) {
 			const cuAprilTagsID_t & detection = tags[i];
@@ -553,8 +575,8 @@ init_device                     (void)
     }
 
     ext_control.id = 0x009a2009; // gain
-//    ext_control.value64 = 1000; 
     ext_control.value64 = 16; 
+   // ext_control.value64 = 1000; 
     if (-1 == xioctl (fd, VIDIOC_S_EXT_CTRLS, &ext_controls)) {
         errno_exit ("VIDIOC_S_CTRL gain");
     }
@@ -621,8 +643,8 @@ init_device                     (void)
 
 #ifdef APRILTAGS
     const int error = nvCreateAprilTagsDetector(
-      &april_tags_handle, width/2, height/2, cuAprilTagsFamily::NVAT_TAG16H5,
-//      &april_tags_handle, width, height, cuAprilTagsFamily::NVAT_TAG16H5,
+//      &april_tags_handle, width/2, height/2, cuAprilTagsFamily::NVAT_TAG16H5,
+      &april_tags_handle, width, height, cuAprilTagsFamily::NVAT_TAG16H5,
       &cam_intrinsics, tag_size);
     if (error != 0) {
       throw std::runtime_error(
@@ -634,13 +656,13 @@ init_device                     (void)
 
     // Allocate the output vector to contain detected AprilTags.
     tags.resize(max_tags);
-    input_image_buffer_size = width * height * 3 / 2 / 2 * sizeof(char);
-    input_image.width = width/2;
-    input_image.height = height/2;
-    //input_image_buffer_size = width * height * 3 * sizeof(char);
-    //input_image.width = width;
-    //input_image.height = height;
-    input_image.pitch = 8; // not sure
+    //input_image_buffer_size = width * height * 3 / 2 / 2 * sizeof(char);
+    //input_image.width = width/2;
+    //input_image.height = height/2;
+    input_image_buffer_size = width * height * 3 * sizeof(char);
+    input_image.width = width;
+    input_image.height = height;
+    //input_image.pitch = 16; // not sure
     // set input_image.dev_ptr to buffer before detecting
 #endif
 }
@@ -690,10 +712,10 @@ init_cuda                       (void)
     }
 
     /* Allocate output buffer. */
-    size_t size = width * height * 3 / 2 / 2 * sizeof(char);
+//    size_t size = width * height * 3 / 2 / 2 * sizeof(char);
 //    size_t size = width * height * 3 * sizeof(char);
 //    size_t size = width * height * 3 / 2 / 2 * sizeof(short);
-//    size_t size = width * height * 3 * sizeof(short);
+    size_t size = width * height * 3 * sizeof(short);
     cudaMallocManaged (&cuda_out_buffer, size, cudaMemAttachGlobal);
 
     cudaDeviceSynchronize ();
@@ -826,6 +848,8 @@ int
 main                            (int                    argc,
                                  char **                argv)
 {
+    std::cout << cv::getBuildInformation();
+
     for (;;) {
         int index;
         int c;

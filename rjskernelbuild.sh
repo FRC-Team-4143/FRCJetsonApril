@@ -1,3 +1,6 @@
+#get kernel sources from https://developer.nvidia.com/downloads/embedded/l4t/r35_release_v3.1/sources/public_sources.tbz2/
+
+
 export LOCALVERSION=-test
 export TEGRA_KERNEL_OUT=/media/ubuntu/673fe9d8-6f00-4487-b046-8ccee8268a74/tx2nx/build
 export TEGRA_MODULES_OUT=/media/ubuntu/673fe9d8-6f00-4487-b046-8ccee8268a74/tx2nx/modsout/
