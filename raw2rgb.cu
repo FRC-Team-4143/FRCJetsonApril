@@ -71,7 +71,7 @@ __global__ void gpuConvertgraytoRGB_kernel(unsigned short *src, unsigned char *d
 	}
 
 	for (int i = 0; i < height; i+=1) {
-		unsigned char gray = (src[i*width+idx+0] ) >> 2;;
+		unsigned char gray = (src[i*width+idx+0] ) >> 8;;
 
 		dst[i*width*3+idx*3+0] = gray;
 		dst[i*width*3+idx*3+1] = gray;
