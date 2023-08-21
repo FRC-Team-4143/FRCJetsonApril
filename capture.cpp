@@ -37,7 +37,7 @@
 #include <malloc.h>
 #include <sys/stat.h>
 #include <sys/types.h>
-#include <sys/time.h>
+#include <chrono>
 #include <sys/mman.h>
 #include <sys/ioctl.h>
 
@@ -104,6 +104,7 @@ cudaStream_t main_stream = {};
 
 float tag_size = .16;  //same units as camera calib
 int max_tags = 5;
+int tile_size = 24;
 
 cuAprilTagsImageInput_t input_image;
 
@@ -115,7 +116,7 @@ static int              fd              = -1;
 struct buffer *         buffers         = NULL;
 static unsigned int     n_buffers       = 0;
 static unsigned int     width           = 1280; // mode 4 or 5
-static unsigned int     height          = 800;
+static unsigned int     height          = 720;
 //static unsigned int     width           = 1920; // mode 2
 //static unsigned int     height          = 1080;
 //static unsigned int     width           = 1640; // mode 3
@@ -157,7 +158,7 @@ process_image (void *           p, double fps)
     //gpuConvertrawtoRGB ((unsigned char *) p, cuda_out_buffer, width, height);
     //gpuConvertrawtoRGBA ((unsigned char *) p, cuda_out_buffer, width, height);
     //gpuConvertgraytoRGB ((unsigned char *) p, cuda_out_buffer, width, height);
-    gpuConvertgraytoRGB ((unsigned short *) p, cuda_out_buffer, width, height);
+    gpuConvertgraytoRGB ((unsigned short *) p, cuda_out_buffer, width, height, main_stream);
 
     /* Save image. */
     /*
@@ -172,7 +173,7 @@ process_image (void *           p, double fps)
 
 #ifdef opencv
     //cv::cuda::GpuMat d_mat(height / 2, width / 2, CV_8UC3, cuda_out_buffer);
-    cv::cuda::GpuMat d_mat(height, width, CV_8UC3, cuda_out_buffer);
+    //cv::cuda::GpuMat d_mat(height, width, CV_8UC3, cuda_out_buffer);
 
 #ifdef CALIB
     cv::Mat gray;
@@ -223,14 +224,13 @@ process_image (void *           p, double fps)
 #ifdef APRILTAGS
     uint32_t num_detections;
     input_image.dev_ptr = (uchar3*)cuda_out_buffer;
-    input_image.pitch = d_mat.step;
     input_image.pitch = width*3;
-    cudaStreamAttachMemAsync(main_stream, input_image.dev_ptr, 0, cudaMemAttachGlobal);
+    //cudaStreamAttachMemAsync(main_stream, input_image.dev_ptr, 0, cudaMemAttachGlobal);
     const int error = cuAprilTagsDetect(
       april_tags_handle, &input_image, tags.data(),
       &num_detections, max_tags, main_stream);
-    cudaStreamAttachMemAsync(main_stream, input_image.dev_ptr, 0, cudaMemAttachHost);
-    cudaStreamSynchronize(main_stream);
+    //cudaStreamAttachMemAsync(main_stream, input_image.dev_ptr, 0, cudaMemAttachHost);
+    //cudaStreamSynchronize(main_stream);
 
     if(error != 0) {
 	    std::cout << "april tag detect error" << std::endl;
@@ -259,7 +259,7 @@ process_image (void *           p, double fps)
 
 #endif
 
-    if(true || count % 10 == 0) {
+    if(count % 8 == 0) {
         cv::Mat mat(height, width, CV_8UC3, cuda_out_buffer);
 #ifdef APRILTAGS
     	for (uint32_t i = 0; i < num_detections; i++) {
@@ -277,7 +277,6 @@ process_image (void *           p, double fps)
 	}
 #endif
         std::string str = "fps: " + std::to_string(fps);
-	std::cout << str << std::endl;
         cv::putText(mat, str, cv::Point(50,50),cv::FONT_HERSHEY_DUPLEX,1,cv::Scalar(0,255,0),2,false);
         cv::imshow(dev_name, mat);
         cv::pollKey();
@@ -318,25 +317,44 @@ read_frame                      (double fps)
 
     assert (i < n_buffers);
 
-    process_image ((void *) buf.m.userptr, fps);
+    fd_set fds;
+    struct timeval tv;
+    int r;
+
+    FD_ZERO (&fds);
+    FD_SET (fd, &fds);
+
+    /* Timeout. */
+    tv.tv_sec = 0;
+    tv.tv_usec = 0;
+
+    r = select (fd + 1, &fds, NULL, NULL, &tv);
+
+    if(r == 0) {
+       std::cout << "buffer timestamp " << buf.timestamp.tv_sec << "." << buf.timestamp.tv_usec << std::endl;
+       process_image ((void *) buf.m.userptr, fps);
+    }
+    else {
+	std::cout << "another frame available skipping this one" << std::endl;
+    }
+
 
     if (-1 == xioctl (fd, VIDIOC_QBUF, &buf))
 	errno_exit ("VIDIOC_QBUF");
 
-    return 1;
+    if(r == 0) return 1;
+    else return 0;
 }
 
 static void
 mainloop                        (void)
 {
-    time_t start, end;
-    double seconds = 0;
     double fps  = 0;
 
     while(true) {
 	    count = 0;
-	    time(&start);
-	    while (count++ < 100) {
+	    auto start = std::chrono::high_resolution_clock::now();
+	    while (count < 120) {
 		for (;;) {
 		    fd_set fds;
 		    struct timeval tv;
@@ -363,16 +381,21 @@ mainloop                        (void)
 			exit (EXIT_FAILURE);
 		    }
 
-		    if (read_frame (fps))
+		    if (read_frame (fps)) {
+		        count++;
 			break;
+		    }
 
 		    /* EAGAIN - continue select loop. */
 		}
 	    }
 
-	    time(&end);
-	    seconds = difftime (end, start);
-	    fps  = (double) count / seconds;
+	    auto end = std::chrono::high_resolution_clock::now();
+	    double seconds = std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count() / 1000.0;
+	    fps  = ((double)count) / seconds;
+
+            std::string str = "fps: " + std::to_string(fps) + " " + std::to_string(count) + "/" + std::to_string(seconds);
+	    std::cout << str << std::endl;
     }
 
 }
@@ -539,7 +562,6 @@ init_device                     (void)
 
     ext_control.id = 0x009a200b; // FRAME_RATE
     ext_control.value64 = 120000000; 
-//    ext_control.value64 = 60000000; 
 //    if (-1 == xioctl (fd, VIDIOC_S_EXT_CTRLS, &ext_controls)) {
 //        errno_exit ("VIDIOC_S_CTRL frame rate");
 //    }
@@ -614,8 +636,8 @@ init_device                     (void)
 #ifdef APRILTAGS
     const int error = nvCreateAprilTagsDetector(
 //      &april_tags_handle, width/2, height/2, cuAprilTagsFamily::NVAT_TAG36H11,
-//      &april_tags_handle, width, height, cuAprilTagsFamily::NVAT_TAG36H11,
-      &april_tags_handle, width, height, cuAprilTagsFamily::NVAT_TAG16H5,
+      &april_tags_handle, width, height, tile_size, cuAprilTagsFamily::NVAT_TAG36H11,
+//      &april_tags_handle, width, height, cuAprilTagsFamily::NVAT_TAG16H5,
       &cam_intrinsics, tag_size);
     if (error != 0) {
       throw std::runtime_error(

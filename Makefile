@@ -54,11 +54,11 @@ raw2rgb.o: raw2rgb.cu
 
 $(APP): capture.o raw2rgb.o
 	@echo "Linking: $@"
-	$(CPP) -o $@ $^ $(CPPFLAGS) $(LDFLAGS) libcuapriltags16h5.a `pkg-config --libs opencv4`
+	$(CPP) -o $@ $^ $(CPPFLAGS) $(LDFLAGS) libcuapriltags.a `pkg-config --libs opencv4`
 
 capturestockrpiv2: capturestockrpiv2.o raw2rgb.o
 	@echo "Linking: $@"
-	$(CPP) -o $@ $^ $(CPPFLAGS) $(LDFLAGS) libcuapriltags16h5.a `pkg-config --libs opencv4`
+	$(CPP) -o $@ $^ $(CPPFLAGS) $(LDFLAGS) libcuapriltags.a `pkg-config --libs opencv4`
 
 clean:
 	$(AT) rm -f *.o $(APP)
