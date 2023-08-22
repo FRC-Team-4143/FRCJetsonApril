@@ -38,13 +38,17 @@ GENCODE_SM87_PTX := -gencode arch=compute_87,code=compute_87
 GENCODE_SM_PTX := -gencode arch=compute_72,code=compute_72
 GENCODE_FLAGS := $(GENCODE_SM53) $(GENCODE_SM62) $(GENCODE_SM72) $(GENCODE_SM_PTX) $(GENCODE_SM87_PTX)
 
-all: $(APP) capturestockrpiv2
+all: $(APP) capturestockrpiv2 calibrate
 
 capture.o: capture.cpp
 	@echo "Compiling: $<"
 	$(CPP) $(CPPFLAGS) -c $<
 
 capturestockrpiv2.o: capturestockrpiv2.cpp
+	@echo "Compiling: $<"
+	$(CPP) $(CPPFLAGS) -c $<
+
+calibrate.o: calibrate.cpp
 	@echo "Compiling: $<"
 	$(CPP) $(CPPFLAGS) -c $<
 
@@ -60,5 +64,8 @@ capturestockrpiv2: capturestockrpiv2.o raw2rgb.o
 	@echo "Linking: $@"
 	$(CPP) -o $@ $^ $(CPPFLAGS) $(LDFLAGS) libcuapriltags.a `pkg-config --libs opencv4`
 
+calibrate: calibrate.o raw2rgb.o
+	@echo "Linking: $@"
+	$(CPP) -o $@ $^ $(CPPFLAGS) $(LDFLAGS) `pkg-config --libs opencv4`
 clean:
 	$(AT) rm -f *.o $(APP)
