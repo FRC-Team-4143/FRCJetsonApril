@@ -27,7 +27,7 @@ SRCS := \
 	capturestockrpiv2.cpp \
 	raw2rgb.cu
 
-ALL_CPPFLAGS := $(addprefix -Xcompiler ,$(filter-out -std=c++11, $(CPPFLAGS)))
+ALL_CPPFLAGS := $(addprefix -Xcompiler ,$(filter-out -std=c++20, $(CPPFLAGS)))
 
 # CUDA code generation flags
 GENCODE_SM53 := -gencode arch=compute_53,code=sm_53
@@ -58,7 +58,7 @@ raw2rgb.o: raw2rgb.cu
 
 $(APP): capture.o raw2rgb.o
 	@echo "Linking: $@"
-	$(CPP) -o $@ $^ $(CPPFLAGS) $(LDFLAGS) libcuapriltags.a `pkg-config --libs opencv4`
+	$(CPP) -o $@ $^ $(CPPFLAGS) $(LDFLAGS) libcuapriltags16h5.a `pkg-config --libs opencv4`
 
 capturestockrpiv2: capturestockrpiv2.o raw2rgb.o
 	@echo "Linking: $@"

@@ -28,7 +28,7 @@ diff -ruN orinorig/hardware/nvidia/platform/t23x/p3768/kernel-dts/cvb/tegra234-c
  							remote-endpoint = <&rbpcv2_imx219_csi_in1>;
 diff -ruN orinorig/hardware/nvidia/platform/t23x/p3768/kernel-dts/cvb/tegra234-camera-rbpcv2-ov9281.dtsi orinmod/hardware/nvidia/platform/t23x/p3768/kernel-dts/cvb/tegra234-camera-rbpcv2-ov9281.dtsi
 --- orinorig/hardware/nvidia/platform/t23x/p3768/kernel-dts/cvb/tegra234-camera-rbpcv2-ov9281.dtsi	1969-12-31 18:00:00.000000000 -0600
-+++ orinmod/hardware/nvidia/platform/t23x/p3768/kernel-dts/cvb/tegra234-camera-rbpcv2-ov9281.dtsi	2023-08-18 15:52:45.008958865 -0500
++++ orinmod/hardware/nvidia/platform/t23x/p3768/kernel-dts/cvb/tegra234-camera-rbpcv2-ov9281.dtsi	2023-08-24 16:10:39.790240576 -0500
 @@ -0,0 +1,514 @@
 +/*
 + * Copyright (c) 2022, NVIDIA CORPORATION.  All rights reserved.
@@ -237,7 +237,7 @@ diff -ruN orinorig/hardware/nvidia/platform/t23x/p3768/kernel-dts/cvb/tegra234-c
 +				* Sensor embedded metadata height in units of rows.
 +				* If sensor does not support embedded metadata value should be 0.
 +				*/
-+				mode0 { /* OV9281_MODE_1280x720_120FPS */
++				mode0 { /* OV9281_MODE_1280x720_144FPS */
 +					mclk_khz = "24000";
 +					num_lanes = "2";
 +					tegra_sinterface = "serial_a";
@@ -249,9 +249,9 @@ diff -ruN orinorig/hardware/nvidia/platform/t23x/p3768/kernel-dts/cvb/tegra234-c
 +
 +					active_w = "1280";
 +					active_h = "720";
-+					mode_type = "bayer";
-+					pixel_phase = "rggb";
-+					csi_pixel_bit_depth = "10";
++					mode_type = "grey";
++					pixel_phase = "y";
++					csi_pixel_bit_depth = "8";
 +					readout_orientation = "90";
 +					line_length = "1355"; /* 1408 rjs */
 +					inherent_gain = "1";
@@ -268,9 +268,9 @@ diff -ruN orinorig/hardware/nvidia/platform/t23x/p3768/kernel-dts/cvb/tegra234-c
 +					min_hdr_ratio = "1";
 +					max_hdr_ratio = "1";
 +					min_framerate = "2000000"; /* 2.0 fps */
-+					max_framerate = "120000000"; /* 120.0 fps */
++					max_framerate = "144000000"; /* 120.0 fps */
 +					step_framerate = "1";
-+					default_framerate = "120000000"; /* 120.0 fps */
++					default_framerate = "144000000"; /* 120.0 fps */
 +					min_exp_time = "1"; /* us */
 +					max_exp_time = "16777215"; /* us */
 +					step_exp_time = "1";
@@ -397,7 +397,7 @@ diff -ruN orinorig/hardware/nvidia/platform/t23x/p3768/kernel-dts/cvb/tegra234-c
 +				* Sensor embedded metadata height in units of rows.
 +				* If sensor does not support embedded metadata value should be 0.
 +				*/
-+				mode0 { /* OV9281_MODE_1280x720_120FPS */
++				mode0 { /* OV9281_MODE_1280x720_144FPS */
 +					mclk_khz = "24000";
 +					num_lanes = "2";
 +					tegra_sinterface = "serial_c";
@@ -409,9 +409,9 @@ diff -ruN orinorig/hardware/nvidia/platform/t23x/p3768/kernel-dts/cvb/tegra234-c
 +
 +					active_w = "1280";
 +					active_h = "720";
-+					mode_type = "bayer";
-+					pixel_phase = "rggb";
-+					csi_pixel_bit_depth = "10";
++					mode_type = "grey";
++					pixel_phase = "y";
++					csi_pixel_bit_depth = "8";
 +					readout_orientation = "90";
 +					line_length = "1355"; /*1408*/
 +					inherent_gain = "1";
@@ -428,9 +428,9 @@ diff -ruN orinorig/hardware/nvidia/platform/t23x/p3768/kernel-dts/cvb/tegra234-c
 +					min_hdr_ratio = "1";
 +					max_hdr_ratio = "1";
 +					min_framerate = "2000000"; /* 2.0 fps */
-+					max_framerate = "120000000"; /* 120.0 fps */
++					max_framerate = "144000000"; /* 120.0 fps */
 +					step_framerate = "1";
-+					default_framerate = "120000000"; /* 120.0 fps */
++					default_framerate = "144000000"; /* 120.0 fps */
 +					min_exp_time = "1"; /* us */
 +					max_exp_time = "16777215"; /* us */
 +					step_exp_time = "1";
@@ -955,7 +955,7 @@ diff -ruN orinorig/hardware/nvidia/platform/t23x/p3768/kernel-dts/tegra234-p3767
 +};
 diff -ruN orinorig/kernel/nvidia/drivers/media/i2c/nv_ov9281.c orinmod/kernel/nvidia/drivers/media/i2c/nv_ov9281.c
 --- orinorig/kernel/nvidia/drivers/media/i2c/nv_ov9281.c	2023-03-19 09:53:53.000000000 -0500
-+++ orinmod/kernel/nvidia/drivers/media/i2c/nv_ov9281.c	2023-08-18 15:50:15.382240503 -0500
++++ orinmod/kernel/nvidia/drivers/media/i2c/nv_ov9281.c	2023-08-24 16:12:19.452842299 -0500
 @@ -19,6 +19,7 @@
  #include <linux/uaccess.h>
  #include <linux/gpio.h>
@@ -964,20 +964,40 @@ diff -ruN orinorig/kernel/nvidia/drivers/media/i2c/nv_ov9281.c orinmod/kernel/nv
  #include <linux/version.h>
  
  #include <linux/seq_file.h>
-@@ -98,18 +99,38 @@
+@@ -85,31 +86,52 @@
+ 
+ /* OV9281 Other Stuffs */
+ #define OV9281_DEFAULT_GAIN		0x0010 /* 1.0x real gain */
+-#define OV9281_MIN_GAIN			0x0001
+-#define OV9281_MAX_GAIN			0x1FFF
++#define OV9281_MIN_GAIN			0x0000
++#define OV9281_MAX_GAIN			0x00FE
+ 
+ #define OV9281_DEFAULT_FRAME_LENGTH	0x071C
+ #define OV9281_MIN_FRAME_LENGTH		0x0001
+ #define OV9281_MAX_FRAME_LENGTH		0xFFFF
+-#define OV9281_FRAME_LENGTH_1SEC	(0x40d * 120) /* TODO: try to calc */
++#define OV9281_FRAME_LENGTH_1SEC	(0x40d * 144) /* TODO: try to calc */
+ 
+-#define OV9281_MIN_EXPOSURE_COARSE	0x00000001
+-#define OV9281_MAX_EXPOSURE_COARSE	0x000FFFFF
++#define OV9281_MIN_EXPOSURE_COARSE	0x00000010
++#define OV9281_MAX_EXPOSURE_COARSE	0x00003750
  #define OV9281_DEFAULT_EXPOSURE_COARSE	0x00002A90
  
  #define OV9281_MAX_WIDTH		1280
 -#define OV9281_MAX_HEIGHT		800
 +#define OV9281_MAX_HEIGHT		720
  
- #define OV9281_DEFAULT_MODE		OV9281_MODE_1280X800
+-#define OV9281_DEFAULT_MODE		OV9281_MODE_1280X800
++#define OV9281_DEFAULT_MODE		OV9281_MODE_1280X720
  #define OV9281_DEFAULT_WIDTH		OV9281_MAX_WIDTH
  #define OV9281_DEFAULT_HEIGHT		OV9281_MAX_HEIGHT
- #define OV9281_DEFAULT_DATAFMT		MEDIA_BUS_FMT_SBGGR10_1X10
+-#define OV9281_DEFAULT_DATAFMT		MEDIA_BUS_FMT_SBGGR10_1X10
 -#define OV9281_DEFAULT_CLK_FREQ		26000000
++/*#define OV9281_DEFAULT_DATAFMT		MEDIA_BUS_FMT_SBGGR10_1X10*/
 +/*#define OV9281_DEFAULT_DATAFMT		MEDIA_BUS_FMT_SRGGB8_1X8*/
-+/*#define OV9281_DEFAULT_DATAFMT		MEDIA_BUS_FMT_Y8_1X8 */
++#define OV9281_DEFAULT_DATAFMT		MEDIA_BUS_FMT_Y8_1X8 
 +/*#define OV9281_DEFAULT_DATAFMT		MEDIA_BUS_FMT_Y10_1X10 */
 +#define OV9281_DEFAULT_CLK_FREQ		24000000
  
@@ -985,7 +1005,8 @@ diff -ruN orinorig/kernel/nvidia/drivers/media/i2c/nv_ov9281.c orinmod/kernel/nv
  #define OV9281_DEFAULT_I2C_ADDRESS_20		(0x20 >> 1)
  #define OV9281_DEFAULT_I2C_ADDRESS_PROGRAMMABLE	(0xe0 >> 1)
  
-+static int sensor_mode = 4;  // 0 for 10bit 1 for 8bit
++static int sensor_mode = 5;
++//Sensor Work Mode: 0=1280x800x10bit_stream 1=1280x800x8bit_stream 2=1280x800x10bit_ext_trig 3=1280x800x8bit_ext_trig 4=1280x720_10_stream 5=1280x720_8_stream  6=1280x720_10_ext_trig  7=1280x720_8_ext_trig 8=640x400_10_stream  9=640x400_8_stream 10=640x400_10_ext_trig 11=640x400_8_ext_trig 12=320x200_8_stream 13=320x200_8_ext_trig
 +
 +struct inno_rom_table {
 +        char magic[12];
@@ -1005,7 +1026,7 @@ diff -ruN orinorig/kernel/nvidia/drivers/media/i2c/nv_ov9281.c orinmod/kernel/nv
  struct ov9281 {
  	struct camera_common_power_rail	power;
  	int				num_ctrls;
-@@ -130,9 +151,60 @@
+@@ -130,9 +152,60 @@
  	struct regmap			*regmap;
  	struct camera_common_data	*s_data;
  	struct camera_common_pdata	*pdata;
@@ -1066,7 +1087,87 @@ diff -ruN orinorig/kernel/nvidia/drivers/media/i2c/nv_ov9281.c orinmod/kernel/nv
  /* Register/regmap stuff */
  static int ov9281_read_reg(struct camera_common_data *s_data, u16 addr, u8 *val)
  {
-@@ -1169,9 +1241,16 @@
+@@ -586,6 +659,7 @@
+ }
+ 
+ /* OTP stuff */
++/*
+ static int ov9281_read_otp(struct ov9281 *priv, u8 *buf, u16 addr, int size)
+ {
+ 	int i;
+@@ -667,6 +741,7 @@
+ 
+ 	return 0;
+ }
++*/
+ 
+ /* V4L2 subdev stuff */
+ static int ov9281_s_stream(struct v4l2_subdev *sd, int enable)
+@@ -892,6 +967,7 @@
+ 	case TEGRA_CAMERA_CID_GAIN:
+ 		err = ov9281_set_gain(priv, ctrl->val);
+ 		break;
++#if 0
+ 	case TEGRA_CAMERA_CID_FRAME_LENGTH:
+ 		/*
+ 		 * This is a workaround for nvbug 1865041, where setting the
+@@ -902,9 +978,11 @@
+ 		if (priv->fsync == OV9281_FSYNC_NONE)
+ 			err = ov9281_set_frame_length(priv, ctrl->val);
+ 		break;
++#endif
+ 	case TEGRA_CAMERA_CID_COARSE_TIME:
+ 		err = ov9281_set_coarse_time(priv, ctrl->val);
+ 		break;
++		/*
+ 	case TEGRA_CAMERA_CID_GROUP_HOLD:
+ 		if (switch_ctrl_qmenu[ctrl->val] == SWITCH_ON) {
+ 			priv->group_hold_en = true;
+@@ -915,6 +993,7 @@
+ 		break;
+ 	case TEGRA_CAMERA_CID_HDR_EN:
+ 		break;
++		*/
+ 	default:
+ 		dev_err(dev, "%s: unknown ctrl id.\n", __func__);
+ 		return -EINVAL;
+@@ -941,7 +1020,7 @@
+ 		.def = OV9281_DEFAULT_GAIN,
+ 		.step = 1,
+ 	},
+-	{
++	/*{
+ 		.ops = &ov9281_ctrl_ops,
+ 		.id = TEGRA_CAMERA_CID_FRAME_LENGTH,
+ 		.name = "Frame Length",
+@@ -951,7 +1030,7 @@
+ 		.max = OV9281_MAX_FRAME_LENGTH,
+ 		.def = OV9281_DEFAULT_FRAME_LENGTH,
+ 		.step = 1,
+-	},
++	},*/
+ 	{
+ 		.ops = &ov9281_ctrl_ops,
+ 		.id = TEGRA_CAMERA_CID_COARSE_TIME,
+@@ -963,7 +1042,7 @@
+ 		.def = OV9281_DEFAULT_EXPOSURE_COARSE,
+ 		.step = 1,
+ 	},
+-	{
++	/*{
+ 		.ops = &ov9281_ctrl_ops,
+ 		.id = TEGRA_CAMERA_CID_GROUP_HOLD,
+ 		.name = "Group Hold",
+@@ -1004,7 +1083,7 @@
+ 		.min = 0,
+ 		.max = OV9281_FUSE_ID_STR_SIZE,
+ 		.step = 2,
+-	},
++	},*/
+ };
+ 
+ static int ov9281_ctrls_init(struct ov9281 *priv)
+@@ -1169,9 +1248,16 @@
  	struct camera_common_data *common_data;
  	struct device *dev = &client->dev;
  	struct ov9281 *priv;
@@ -1084,7 +1185,7 @@ diff -ruN orinorig/kernel/nvidia/drivers/media/i2c/nv_ov9281.c orinmod/kernel/nv
  
  	common_data = devm_kzalloc(dev, sizeof(*common_data), GFP_KERNEL);
  
-@@ -1185,6 +1264,81 @@
+@@ -1185,6 +1271,81 @@
  		return -ENOMEM;
  	}
  
@@ -1166,17 +1267,34 @@ diff -ruN orinorig/kernel/nvidia/drivers/media/i2c/nv_ov9281.c orinmod/kernel/nv
  	priv->regmap = devm_regmap_init_i2c(client, &ov9281_regmap_config);
  	if (IS_ERR(priv->regmap)) {
  		dev_err(dev, "regmap init failed %ld\n", PTR_ERR(priv->regmap));
+@@ -1264,6 +1425,7 @@
+ 	if (err)
+ 		goto error;
+ 
++	/*
+ 	err = ov9281_otp_setup(priv);
+ 	if (err) {
+ 		dev_err(dev, "Error %d reading otp data\n", err);
+@@ -1275,6 +1437,7 @@
+ 		dev_err(dev, "Error %d reading fuse id data\n", err);
+ 		return err;
+ 	}
++	*/
+ 
+ 	priv->subdev->flags |= V4L2_SUBDEV_FL_HAS_DEVNODE |
+ 		     V4L2_SUBDEV_FL_HAS_EVENTS;
 diff -ruN orinorig/kernel/nvidia/drivers/media/i2c/ov9281_mode_tbls.h orinmod/kernel/nvidia/drivers/media/i2c/ov9281_mode_tbls.h
 --- orinorig/kernel/nvidia/drivers/media/i2c/ov9281_mode_tbls.h	2023-03-19 09:53:53.000000000 -0500
-+++ orinmod/kernel/nvidia/drivers/media/i2c/ov9281_mode_tbls.h	2023-08-18 15:47:02.962744664 -0500
-@@ -28,8 +28,8 @@
++++ orinmod/kernel/nvidia/drivers/media/i2c/ov9281_mode_tbls.h	2023-08-24 16:14:07.891425456 -0500
+@@ -27,9 +27,9 @@
+ #define ov9281_reg struct reg_8
  
  enum {
- 	OV9281_MODE_1280X800,
--	OV9281_MODE_1280X720,
+-	OV9281_MODE_1280X800,
++	/*OV9281_MODE_1280X800,*/
+ 	OV9281_MODE_1280X720,
 -	OV9281_MODE_640X400,
-+	/*OV9281_MODE_1280X720,
-+	OV9281_MODE_640X400, */
++	/*OV9281_MODE_640X400, */
  	OV9281_MODE_START_STREAM,
  	OV9281_MODE_STOP_STREAM,
  };
@@ -1199,7 +1317,7 @@ diff -ruN orinorig/kernel/nvidia/drivers/media/i2c/ov9281_mode_tbls.h orinmod/ke
  static const ov9281_reg ov9281_mode_1280x800_26MhzMCLK_fsync_slave[] = {
  	{ 0x3826, 0x03 }, /* R reset value on fsin.  VTS - 4 */
  	{ 0x3827, 0x8a },
-@@ -437,19 +441,33 @@
+@@ -437,19 +441,44 @@
  	{ 0x3827, 0x04 },
  	{ OV9281_TABLE_END, 0x00 }
  };
@@ -1215,10 +1333,20 @@ diff -ruN orinorig/kernel/nvidia/drivers/media/i2c/ov9281_mode_tbls.h orinmod/ke
 +       {OV9281_TABLE_END, 0x00 }
 +};
 +
++static const ov9281_reg ov9281_mode_1280x720_24MhzMCLK_fsync_slave[] = {
++       { 0x3826, 0x03 }, /* R reset value on fsin.  VTS - 4 */
++       { 0x3827, 0x8a },
++       { OV9281_TABLE_END, 0x00 }
++};
++
++static const ov9281_reg ov9281_mode_1280x720_24MhzMCLK[] = {
++       {OV9281_TABLE_END, 0x00 }
++};
  
  static const ov9281_reg *ov9281_mode_table[] = {
 -	[OV9281_MODE_1280X800] = ov9281_mode_1280x800_26MhzMCLK,
-+	[OV9281_MODE_1280X800] = ov9281_mode_1280x800_24MhzMCLK,
++	/*[OV9281_MODE_1280X800] = ov9281_mode_1280x800_24MhzMCLK,*/
++	[OV9281_MODE_1280X720] = ov9281_mode_1280x720_24MhzMCLK,
 +	/*[OV9281_MODE_1280X800] = ov9281_mode_1280x800_26MhzMCLK,
  	[OV9281_MODE_1280X720] = ov9281_mode_1280x720_26MhzMCLK,
 -	[OV9281_MODE_640X400] = ov9281_mode_640x400_26MhzMCLK,
@@ -1229,7 +1357,8 @@ diff -ruN orinorig/kernel/nvidia/drivers/media/i2c/ov9281_mode_tbls.h orinmod/ke
  
  static const ov9281_reg *ov9281_fsync_slave_mode_table[] = {
 -	[OV9281_MODE_1280X800] = ov9281_mode_1280x800_26MhzMCLK_fsync_slave,
-+	[OV9281_MODE_1280X800] = ov9281_mode_1280x800_24MhzMCLK_fsync_slave,
++	/*[OV9281_MODE_1280X800] = ov9281_mode_1280x800_24MhzMCLK_fsync_slave,*/
++	[OV9281_MODE_1280X720] = ov9281_mode_1280x720_24MhzMCLK_fsync_slave,
 +	/*[OV9281_MODE_1280X800] = ov9281_mode_1280x800_26MhzMCLK_fsync_slave,
  	[OV9281_MODE_1280X720] = ov9281_mode_1280x720_26MhzMCLK_fsync_slave,
 -	[OV9281_MODE_640X400] = ov9281_mode_640x400_26MhzMCLK_fsync_slave,
@@ -1237,7 +1366,7 @@ diff -ruN orinorig/kernel/nvidia/drivers/media/i2c/ov9281_mode_tbls.h orinmod/ke
  };
  
  static const ov9281_reg *ov9281_fsync_table[] = {
-@@ -462,13 +480,25 @@
+@@ -462,13 +491,27 @@
  	60,
  };
  
@@ -1252,9 +1381,11 @@ diff -ruN orinorig/kernel/nvidia/drivers/media/i2c/ov9281_mode_tbls.h orinmod/ke
  static const struct camera_common_frmfmt ov9281_frmfmt[] = {
 -	{ { 1280, 800 }, ov9281_60fps, ARRAY_SIZE(ov9281_60fps), 0,
 +	/*{ { 1280, 800 }, ov9281_144fps, ARRAY_SIZE(ov9281_144fps), 0,
-+	  OV9281_MODE_1280X800 },*/
-+	{ { 1280, 720 }, ov9281_120fps, ARRAY_SIZE(ov9281_120fps), 0,
 +	  OV9281_MODE_1280X800 },
++	{ { 1280, 720 }, ov9281_120fps, ARRAY_SIZE(ov9281_120fps), 0,
++	  OV9281_MODE_1280X800 },*/
++	{ { 1280, 720 }, ov9281_144fps, ARRAY_SIZE(ov9281_144fps), 0,
++	  OV9281_MODE_1280X720 }, 
 +	/*{ { 1280, 800 }, ov9281_60fps, ARRAY_SIZE(ov9281_60fps), 0,
  	  OV9281_MODE_1280X800 },
  	{ { 1280, 720 }, ov9281_60fps, ARRAY_SIZE(ov9281_60fps), 0,
@@ -1296,7 +1427,7 @@ diff -ruN orinorig/kernel/nvidia/drivers/media/platform/tegra/camera/camera_comm
  	 * keep them at the last to ensure they get discarded
 diff -ruN orinorig/kernel/nvidia/drivers/media/platform/tegra/camera/sensor_common.c orinmod/kernel/nvidia/drivers/media/platform/tegra/camera/sensor_common.c
 --- orinorig/kernel/nvidia/drivers/media/platform/tegra/camera/sensor_common.c	2023-03-19 09:53:53.000000000 -0500
-+++ orinmod/kernel/nvidia/drivers/media/platform/tegra/camera/sensor_common.c	2023-08-16 17:31:35.728826771 -0500
++++ orinmod/kernel/nvidia/drivers/media/platform/tegra/camera/sensor_common.c	2023-08-24 15:37:00.127955221 -0500
 @@ -237,6 +237,8 @@
  
  	if (strncmp(pixel_t, "bayer_bggr10", size) == 0)
@@ -1306,11 +1437,13 @@ diff -ruN orinorig/kernel/nvidia/drivers/media/platform/tegra/camera/sensor_comm
  	else if (strncmp(pixel_t, "bayer_rggb10", size) == 0)
  		*format = V4L2_PIX_FMT_SRGGB10;
  	else if (strncmp(pixel_t, "bayer_grbg10", size) == 0)
-@@ -273,6 +275,12 @@
+@@ -273,6 +275,14 @@
  		*format = V4L2_PIX_FMT_UYVY;
  	else if (strncmp(pixel_t, "yuv_vyuy16", size) == 0)
  		*format = V4L2_PIX_FMT_VYUY;
-+	else if (strncmp(pixel_t, "raw_y88", size) == 0)
++	else if (strncmp(pixel_t, "raw_grey8", size) == 0)
++		*format = V4L2_PIX_FMT_GREY;
++	else if (strncmp(pixel_t, "grey_y8", size) == 0)
 +		*format = V4L2_PIX_FMT_GREY;
 +	else if (strncmp(pixel_t, "raw_y1010", size) == 0)
 +		*format = V4L2_PIX_FMT_Y10;
@@ -1319,6 +1452,69 @@ diff -ruN orinorig/kernel/nvidia/drivers/media/platform/tegra/camera/sensor_comm
  	else {
  		pr_err("%s: Need to extend format%s\n", __func__, pixel_t);
  		return -EINVAL;
+diff -ruN orinorig/kernel/nvidia/drivers/media/platform/tegra/camera/vi/vi2_formats.h orinmod/kernel/nvidia/drivers/media/platform/tegra/camera/vi/vi2_formats.h
+--- orinorig/kernel/nvidia/drivers/media/platform/tegra/camera/vi/vi2_formats.h	2023-03-19 09:53:53.000000000 -0500
++++ orinmod/kernel/nvidia/drivers/media/platform/tegra/camera/vi/vi2_formats.h	2023-08-24 14:48:05.241041286 -0500
+@@ -81,6 +81,8 @@
+ 				RAW8, SGBRG8, "GBGB.. RGRG.."),
+ 	TEGRA_VIDEO_FORMAT(RAW8, 8, SBGGR8_1X8, 1, 1, T_L8,
+ 				RAW8, SBGGR8, "BGBG.. GRGR.."),
++	TEGRA_VIDEO_FORMAT(RAW8, 8, Y8_1X8, 1, 1, T_L8,
++				RAW8, GREY, "GREY8"),
+ 
+ 	/* RAW 10 */
+ 	TEGRA_VIDEO_FORMAT(RAW10, 10, SRGGB10_1X10, 2, 1, T_R16_I,
+@@ -91,6 +93,8 @@
+ 				RAW10, SGBRG10, "GBGB.. RGRG.."),
+ 	TEGRA_VIDEO_FORMAT(RAW10, 10, SBGGR10_1X10, 2, 1, T_R16_I,
+ 				RAW10, SBGGR10, "BGBG.. GRGR.."),
++	TEGRA_VIDEO_FORMAT(RAW10, 10, Y10_1X10, 2, 1, T_R16_I,
++				RAW10, Y10, "GREY10"),
+ 
+ 	/* RAW 10 Packed format */
+ 	TEGRA_VIDEO_FORMAT(RAW10, 10, XBGGR10P_3X10, 4, 3, T_X2Lc10Lb10La10,
+diff -ruN orinorig/kernel/nvidia/drivers/media/platform/tegra/camera/vi/vi4_formats.h orinmod/kernel/nvidia/drivers/media/platform/tegra/camera/vi/vi4_formats.h
+--- orinorig/kernel/nvidia/drivers/media/platform/tegra/camera/vi/vi4_formats.h	2023-03-19 09:53:53.000000000 -0500
++++ orinmod/kernel/nvidia/drivers/media/platform/tegra/camera/vi/vi4_formats.h	2023-08-24 15:47:59.848803218 -0500
+@@ -95,6 +95,8 @@
+ 				RAW8, SGBRG8, "GBGB.. RGRG.."),
+ 	TEGRA_VIDEO_FORMAT(RAW8, 8, SBGGR8_1X8, 1, 1, T_L8,
+ 				RAW8, SBGGR8, "BGBG.. GRGR.."),
++	TEGRA_VIDEO_FORMAT(RAW8, 8, Y8_1X8, 1, 1, T_L8,
++				RAW8, GREY, "GREY8"),
+ 
+ 	/* RAW 10 */
+ 	TEGRA_VIDEO_FORMAT(RAW10, 10, SRGGB10_1X10, 2, 1, T_R16_I,
+@@ -105,6 +107,8 @@
+ 				RAW10, SGBRG10, "GBGB.. RGRG.."),
+ 	TEGRA_VIDEO_FORMAT(RAW10, 10, SBGGR10_1X10, 2, 1, T_R16_I,
+ 				RAW10, SBGGR10, "BGBG.. GRGR.."),
++	TEGRA_VIDEO_FORMAT(RAW10, 10, Y10_1X10, 2, 1, T_R16_I,
++				RAW10, Y10, "GREY10"),
+ 
+ 	/* RAW 12 */
+ 	TEGRA_VIDEO_FORMAT(RAW12, 12, SRGGB12_1X12, 2, 1, T_R16_I,
+diff -ruN orinorig/kernel/nvidia/drivers/media/platform/tegra/camera/vi/vi5_formats.h orinmod/kernel/nvidia/drivers/media/platform/tegra/camera/vi/vi5_formats.h
+--- orinorig/kernel/nvidia/drivers/media/platform/tegra/camera/vi/vi5_formats.h	2023-03-19 09:53:53.000000000 -0500
++++ orinmod/kernel/nvidia/drivers/media/platform/tegra/camera/vi/vi5_formats.h	2023-08-24 15:54:15.978580726 -0500
+@@ -95,6 +95,8 @@
+ 				RAW8, SGBRG8, "GBGB.. RGRG.."),
+ 	TEGRA_VIDEO_FORMAT(RAW8, 8, SBGGR8_1X8, 1, 1, T_R8,
+ 				RAW8, SBGGR8, "BGBG.. GRGR.."),
++	TEGRA_VIDEO_FORMAT(RAW8, 8, Y8_1X8, 1, 1, T_R8,
++				RAW8, GREY, "GREY8"),
+ 
+ 	/* RAW 10 */
+ 	TEGRA_VIDEO_FORMAT(RAW10, 10, SRGGB10_1X10, 2, 1, T_R16,
+@@ -105,6 +107,8 @@
+ 				RAW10, SGBRG10, "GBGB.. RGRG.."),
+ 	TEGRA_VIDEO_FORMAT(RAW10, 10, SBGGR10_1X10, 2, 1, T_R16,
+ 				RAW10, SBGGR10, "BGBG.. GRGR.."),
++	TEGRA_VIDEO_FORMAT(RAW10, 10, Y10_1X10, 2, 1, T_R16,
++				RAW10, Y10, "GREY10"),
+ 
+ 	/* RAW 12 */
+ 	TEGRA_VIDEO_FORMAT(RAW12, 12, SRGGB12_1X12, 2, 1, T_R16,
 diff -ruN orinorig/kernel/nvidia/drivers/misc/eventlib/Makefile orinmod/kernel/nvidia/drivers/misc/eventlib/Makefile
 --- orinorig/kernel/nvidia/drivers/misc/eventlib/Makefile	2023-03-19 09:53:53.000000000 -0500
 +++ orinmod/kernel/nvidia/drivers/misc/eventlib/Makefile	2023-08-15 17:14:01.214460920 -0500

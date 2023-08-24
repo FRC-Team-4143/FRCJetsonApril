@@ -32,7 +32,7 @@ void gpuConvertrawtoRGB(unsigned short *src, unsigned char *dst,
 void gpuConvertgraytoRGBA(unsigned char *src, unsigned char *dst,
 		unsigned int width, unsigned int height);
 void gpuConvertgraytoRGB(unsigned char *src, unsigned char *dst,
-		unsigned int width, unsigned int height);
+		unsigned int width, unsigned int height, cudaStream_t stream);
 void gpuConvertgraytoRGB(unsigned short *src, unsigned char *dst,
 		unsigned int width, unsigned int height, cudaStream_t stream);
 void gpuConvertgraytoRGBA(unsigned short *src, unsigned char *dst,
