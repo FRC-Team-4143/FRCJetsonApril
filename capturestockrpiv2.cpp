@@ -108,6 +108,7 @@ cudaStream_t main_stream = {};
 
 float tag_size = .16;  //same units as camera calib
 int max_tags = 5;
+int tile_size = 24;
 
 cuAprilTagsImageInput_t input_image;
 
@@ -643,8 +644,8 @@ init_device                     (void)
 
 #ifdef APRILTAGS
     const int error = nvCreateAprilTagsDetector(
-//      &april_tags_handle, width/2, height/2, cuAprilTagsFamily::NVAT_TAG16H5,
-      &april_tags_handle, width, height, cuAprilTagsFamily::NVAT_TAG16H5,
+//      &april_tags_handle, width/2, height/2, tile_size, cuAprilTagsFamily::NVAT_TAG16H5,
+      &april_tags_handle, width, height, tile_size, cuAprilTagsFamily::NVAT_TAG16H5,
       &cam_intrinsics, tag_size);
     if (error != 0) {
       throw std::runtime_error(
