@@ -71,7 +71,7 @@ extern "C" {
     //! \retval :: 0 - Success, else - Failure
     int nvCreateAprilTagsDetector(cuAprilTagsHandle* hApriltags,    //!< TODO: We usually return the result in the last parameter, not first.
         const uint32_t img_width, const uint32_t img_height,
-//	const uint32_t tile_size,
+	const uint32_t tile_size,
         const cuAprilTagsFamily tag_family,
         const cuAprilTagsCameraIntrinsics_t *cam,
         float tag_dim);

@@ -180,46 +180,50 @@ process_image (void *           p, double fps)
 	    std::cout << "april tag detect error" << std::endl;
     }
     
-    if (num_detections > 0) {
-    	std::cout << "frame " << count << " found tag";
-    }
-
+    //if (num_detections > 0) {
+    //	std::cout << "frame " << count << " found tag";
+    //}
 
     for (uint32_t i = 0; i < num_detections; i++) {
        const cuAprilTagsID_t & detection = tags[i];
        if(detection.id > MAX_TAG_ID) continue;
 
-       std::cout << " " <<  detection.id << ":" << detection.translation[0];
-       std::cout << "," << detection.translation[1];
-       std::cout << "," << detection.translation[2] << " ";
+       float distance = std::sqrt(
+		       detection.translation[0] * detection.translation[0] +
+		       detection.translation[1] * detection.translation[1] +
+		       detection.translation[2] * detection.translation[2]);
 
-       const Eigen::Map<const Eigen::Matrix<float, 3, 3, Eigen::ColMajor>>
-            orientation(detection.orientation);
+       std::cout << "tag" <<  detection.id << " error: " << unsigned(detection.hamming_error) << " " << detection.translation[0];
+       std::cout << "," << detection.translation[1];
+       std::cout << "," << detection.translation[2] << " " << distance;
+
+       //const Eigen::Map<const Eigen::Matrix<float, 3, 3, Eigen::ColMajor>>
+       //     orientation(detection.orientation);
        //std::cout << std::endl << orientation << std::endl;
-       const Eigen::Quaternion<float> q(orientation);
+       //const Eigen::Quaternion<float> q(orientation);
        //std::cout << "quaternion: " << q.w() << " " << q.x() << " " << q.y() << " " << q.z() << std::endl;
        //const Eigen::AngleAxis<float> axis(q);
        //std::cout << "angle: " << axis.angle()*180.0/M_PI << std::endl;
        //
-       double zsqr = q.z() * q.z();
-       double t0 = -2.0 * (zsqr + q.w() * q.w()) + 1.0;
-       double t1 = +2.0 * (q.y() * q.z() + q.x() * q.w());
-       double t2 = -2.0 * (q.y() * q.w() - q.x() * q.z());
-       double t3 = +2.0 * (q.z() * q.w() + q.x() * q.y());
-       double t4 = -2.0 * (q.y() * q.y() + zsqr) + 1.0;
+       //double zsqr = q.z() * q.z();
+       //double t0 = -2.0 * (zsqr + q.w() * q.w()) + 1.0;
+       //double t1 = +2.0 * (q.y() * q.z() + q.x() * q.w());
+       //double t2 = -2.0 * (q.y() * q.w() - q.x() * q.z());
+       //double t3 = +2.0 * (q.z() * q.w() + q.x() * q.y());
+       //double t4 = -2.0 * (q.y() * q.y() + zsqr) + 1.0;
 
-       t2 = t2 > 1.0 ? 1.0 : t2;
-       t2 = t2 < -1.0 ? -1.0 : t2;
+       //t2 = t2 > 1.0 ? 1.0 : t2;
+       //t2 = t2 < -1.0 ? -1.0 : t2;
 
-       double roll = atan2(t3, t4)*180/M_PI;
-       double yaw = asin(t2)*180/M_PI;
-       double pitch = atan2(t1, t0)*180/M_PI;
-       std::cout << "roll: " << roll << " pitch: " << pitch << " yaw: " << yaw << std::endl;
+       //double roll = atan2(t3, t4)*180/M_PI;
+       //double yaw = asin(t2)*180/M_PI;
+       //double pitch = atan2(t1, t0)*180/M_PI;
+       //std::cout << "roll: " << roll << " pitch: " << pitch << " yaw: " << yaw << std::endl;
 
 
     }
     if (num_detections > 0)
-    	std::cout << std::endl;
+    	std::cout << std::endl << std::endl ;
 
     if(count % 8 == 0) {
         cv::Mat mat(height, width, CV_8UC3, cuda_out_buffer);
@@ -251,10 +255,10 @@ process_image (void *           p, double fps)
 	       tVec.at<double>(1) = detection.translation[1];
 	       tVec.at<double>(2) = detection.translation[2];
 
-	       std::cout << "Intrisic matrix: " << intrinsicMat << std::endl << std::endl;
-	       std::cout << "Rotation matrix: " << rRot << std::endl << std::endl;
-	       std::cout << "Rotation vector: " << rVec << std::endl << std::endl;
-	       std::cout << "Translation vector: " << tVec << std::endl << std::endl;
+	       //std::cout << "Intrisic matrix: " << intrinsicMat << std::endl << std::endl;
+	       //std::cout << "Rotation matrix: " << rRot << std::endl << std::endl;
+	       //std::cout << "Rotation vector: " << rVec << std::endl << std::endl;
+	       //std::cout << "Translation vector: " << tVec << std::endl << std::endl;
 	       cv::projectPoints(objectPoints, rVec, tVec, intrinsicMat, distCoeffs, imagePoints);
 		//for (unsigned int i = 0; i < imagePoints.size(); ++i){
 		//  cv::circle(mat, imagePoints[i], 3, cv::Scalar(0,255,0), 1);
@@ -337,7 +341,7 @@ read_frame                      (double fps)
        process_image ((void *) buf.m.userptr, fps);
     }
     else {
-	std::cout << "another frame available skipping this one" << std::endl;
+	//std::cout << "another frame available skipping this one" << std::endl;
     }
 
 
@@ -686,8 +690,8 @@ init_device                     (void)
     init_userp (fmt.fmt.pix.sizeimage);
 
     const int error = nvCreateAprilTagsDetector(
-//      &april_tags_handle, width, height, tile_size, cuAprilTagsFamily::NVAT_TAG36H11,
-      &april_tags_handle, width, height, cuAprilTagsFamily::NVAT_TAG16H5,
+      &april_tags_handle, width, height, tile_size, cuAprilTagsFamily::NVAT_TAG16H5,
+      //&april_tags_handle, width, height, cuAprilTagsFamily::NVAT_TAG16H5,
       &cam_intrinsics, tag_size);
     if (error != 0) {
       throw std::runtime_error(

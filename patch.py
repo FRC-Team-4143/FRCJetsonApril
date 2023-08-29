@@ -7,11 +7,15 @@ def patch_files(file1, file2):
     with open(file2, 'r') as fh:
         patchlist = fh.readlines()
     count = 0
+    offset = 0
 
     with open(file1, 'r+b') as fh:
         for line in patchlist:
             count += 1
-            offset = int(line[0:8], 16)
+            if(line[8] == ':'):
+                offset = int(line[0:8], 16)
+            else:
+                offset += 1
             value = bytes.fromhex(line[10:12])
             print(offset, value)
             fh.seek(offset)
