@@ -61,9 +61,12 @@
 #include <opencv2/cudafilters.hpp>
 
 #include "cuAprilTags.h"
-#include <eigen3/Eigen/Dense>
+//#include <eigen3/Eigen/Dense>
 
 #include "raw2rgb.cuh"
+
+#include "frc/apriltag/AprilTagFields.h"
+#include "frc/apriltag/AprilTagFieldLayout.h"
 
 #define OV9281_MIN_GAIN                 0x0000
 #define OV9281_MAX_GAIN                 0x00FE
@@ -131,7 +134,11 @@ static unsigned int     field           = V4L2_FIELD_NONE;
 auto ntinst = nt::NetworkTableInstance::GetDefault();
 
 cs::CvSource cvsource{"cvsource", cs::VideoMode::kMJPEG, (int) width, (int) height, 30};
+cs::CvSource cvsource2{"cvsource2", cs::VideoMode::kMJPEG, (int) 850, (int) 1700, 30};
 cs::MjpegServer cvMjpegServer{"cvhttpserver", 1181};
+cs::MjpegServer cvMjpegServer2{"field", 1182};
+
+frc::AprilTagFieldLayout fieldlayout;
 
 const std::string_view config = "{ }";
 
@@ -197,6 +204,9 @@ process_image (void *           p, double fps)
        std::cout << "," << detection.translation[1];
        std::cout << "," << detection.translation[2] << " " << distance;
 
+       
+
+
        //const Eigen::Map<const Eigen::Matrix<float, 3, 3, Eigen::ColMajor>>
        //     orientation(detection.orientation);
        //std::cout << std::endl << orientation << std::endl;
@@ -227,6 +237,7 @@ process_image (void *           p, double fps)
 
     if(count % 8 == 0) {
         cv::Mat mat(height, width, CV_8UC3, cuda_out_buffer);
+        cv::Mat fieldMat(850, 1700, CV_8UC3);
 
 	    std::vector<cv::Point2d> imagePoints;
 	    cv::Mat rRot(3, 3, cv::DataType<double>::type, 0.0);
@@ -281,11 +292,35 @@ process_image (void *           p, double fps)
         	std::string str = std::to_string(detection.id);
         	cv::putText(mat, str, imagePoints[8],cv::FONT_HERSHEY_DUPLEX,1,cv::Scalar(0,255,255),2,false);
 
+            double yaw = atan2(detection.orientation[1],detection.orientation[0]);
+        double pitch = atan2(-detection.orientation[2], sqrt(pow(detection.orientation[5],2) + pow(detection.orientation[8],2)));
+       double roll = atan2(detection.orientation[5],detection.orientation[8]);
+       std::cout << " " << yaw << ", " << pitch << ", " << roll << std::endl;
+       auto tagTranslation = frc::Translation3d(units::meter_t (detection.translation[2]), units::meter_t (detection.translation[0]), units::meter_t (0));
+       auto tagTransform = frc::Transform3d(tagTranslation, frc::Rotation3d()); //put in pitch
+       auto tagTranslationRot = frc::Translation3d();
+       auto tagTransformRot = frc::Transform3d(tagTranslation, frc::Rotation3d(units::radian_t (0), units::radian_t (0), units::radian_t (pitch))); //put in pitch
+
+       auto robotPose = fieldlayout.GetTagPose(detection.id).value_or(frc::Pose3d()) + tagTransformRot + tagTransform;
+       cv::circle(fieldMat,cv::Point(robotPose.X().value()*100,robotPose.Y().value()*100),20, cv::Scalar(255,255,0), 2);
 	}
 
+
+    // draw field need const
+        cv::rectangle(fieldMat, cv::Rect(5, 5, 1690, 840), cv::Scalar(0,255,0), 5);
+        cv::line(fieldMat,cv::Point(850,0),cv::Point(850,850), cv::Scalar(0,0,255), 2);
+        cv::circle(fieldMat,cv::Point(850,425),100, cv::Scalar(255,0,0), 2);
+
+
+        for(int i=1; i<9; i++) {
+            auto pos = fieldlayout.GetTagPose(i).value_or(frc::Pose3d());
+            cv::putText(fieldMat, std::to_string(i), cv::Point(pos.X().value()*100,pos.Y().value()*100),cv::FONT_HERSHEY_DUPLEX,1,cv::Scalar(255,0,0),2,false);
+        }
         std::string str = "fps: " + std::to_string(fps);
         cv::putText(mat, str, cv::Point(50,50),cv::FONT_HERSHEY_DUPLEX,1,cv::Scalar(255,0,0),2,false);
 	cvsource.PutFrame(mat);
+    cvsource2.PutFrame(fieldMat);
+
     }
 }
 
@@ -791,7 +826,13 @@ init_wpilib                       (void)
       },
     cs::RawEvent::kSourcePropertyValueUpdated, false, &status);
 
+    cvMjpegServer2.SetSource(cvsource2);
 
+    fieldlayout = frc::LoadAprilTagLayoutField(frc::AprilTagField::k2023ChargedUp);
+    for(int i=1; i<9; i++) {
+        auto pos = fieldlayout.GetTagPose(i).value_or(frc::Pose3d());
+        std::cout << i << " " << pos.X().value() << " " << pos.Y().value()<< std::endl;
+    }
     intrinsicMat.at<double>(0, 0) = cam_intrinsics.fx;
     intrinsicMat.at<double>(1, 0) = 0;
     intrinsicMat.at<double>(2, 0) = 0;

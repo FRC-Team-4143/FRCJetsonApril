@@ -101,6 +101,8 @@ CPPFLAGS += -std=c++20 \
 	-I"$(TARGET_ROOTFS)/usr/local/include/cameraserver" \
 	-I"$(TARGET_ROOTFS)/usr/local/include/cscore" \
 	-I"$(TARGET_ROOTFS)/usr/local/include/wpiutil" \
+	-I"$(TARGET_ROOTFS)/usr/local/include/wpimath" \
+	-I"$(TARGET_ROOTFS)/usr/local/include/apriltag" \
 	-I"$(TARGET_ROOTFS)/usr/local/include/ntcore"
 
 # All common dependent libraries
@@ -108,7 +110,7 @@ LDFLAGS += \
 	-lpthread -lv4l2 -lEGL -lGLESv2 -lX11 \
 	-lnvbuf_utils -lnvjpeg -lnvosd -ldrm \
 	-lcuda -lcudart -lnppicc -lcameraserver \
-	-lcscore -lntcore -lwpiutil \
+	-lcscore -lntcore -lwpiutil -lwpimath -lapriltag \
 	-L"$(TARGET_ROOTFS)/$(CUDA_PATH)/lib64" \
 	-L"$(TARGET_ROOTFS)/usr/lib/$(TEGRA_ARMABI)" \
 	-L"$(TARGET_ROOTFS)/usr/lib/$(TEGRA_ARMABI)/tegra"
