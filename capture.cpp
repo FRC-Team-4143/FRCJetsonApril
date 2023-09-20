@@ -200,9 +200,9 @@ process_image (void *           p, double fps)
 		       detection.translation[1] * detection.translation[1] +
 		       detection.translation[2] * detection.translation[2]);
 
-       std::cout << "tag" <<  detection.id << " error: " << unsigned(detection.hamming_error) << " " << detection.translation[0];
-       std::cout << "," << detection.translation[1];
-       std::cout << "," << detection.translation[2] << " " << distance;
+       //std::cout << "tag" <<  detection.id << " error: " << unsigned(detection.hamming_error) << " " << detection.translation[0];
+       //std::cout << "," << detection.translation[1];
+       //std::cout << "," << detection.translation[2] << " " << distance;
 
        
 
@@ -232,12 +232,15 @@ process_image (void *           p, double fps)
 
 
     }
-    if (num_detections > 0)
-    	std::cout << std::endl << std::endl ;
+    if (num_detections > 0) {
+    	//std::cout << std::endl << std::endl ;
+    }
 
     if(count % 8 == 0) {
         cv::Mat mat(height, width, CV_8UC3, cuda_out_buffer);
         cv::Mat fieldMat(850, 1700, CV_8UC3);
+
+        fieldMat = cv::Mat::zeros(cv::Size(fieldMat.cols, fieldMat.rows), CV_8UC3);
 
 	    std::vector<cv::Point2d> imagePoints;
 	    cv::Mat rRot(3, 3, cv::DataType<double>::type, 0.0);
@@ -248,6 +251,16 @@ process_image (void *           p, double fps)
        		const cuAprilTagsID_t & detection = tags[i];
                 if(detection.id > MAX_TAG_ID) continue;
 
+
+            float yaw = atan2(detection.orientation[1],detection.orientation[0]);   // actually roll
+            float pitch = atan2(-detection.orientation[2], sqrt(pow(detection.orientation[5],2) + pow(detection.orientation[8],2)));  //yaw
+            float roll = atan2(detection.orientation[5],detection.orientation[8]);  //pitch
+            std::cout << roll << std::endl;
+
+            if(fabs(yaw) > 0.2) continue;
+            if(fabs(roll) > 0.5) continue;
+
+            //" " << pitch << ", " <<    << ", " << yaw
        		cv::Point tag_points[4];
 	       tag_points[0] = cv::Point( detection.corners[0].x, detection.corners[0].y);
 	       tag_points[1] = cv::Point( detection.corners[1].x, detection.corners[1].y);
@@ -274,7 +287,7 @@ process_image (void *           p, double fps)
 		//for (unsigned int i = 0; i < imagePoints.size(); ++i){
 		//  cv::circle(mat, imagePoints[i], 3, cv::Scalar(0,255,0), 1);
 		//}
-	        cv::line(mat, imagePoints[0], imagePoints[1], cv::Scalar(0,255,0), 2);
+	        cv::line(mat, imagePoints[0], imagePoints[1], cv::Scalar(0,255,0), 2); // Box stuff
 	        cv::line(mat, imagePoints[1], imagePoints[2], cv::Scalar(0,255,0), 2);
 	        cv::line(mat, imagePoints[2], imagePoints[3], cv::Scalar(0,255,0), 2);
 	        cv::line(mat, imagePoints[3], imagePoints[0], cv::Scalar(0,255,0), 2);
@@ -286,25 +299,22 @@ process_image (void *           p, double fps)
 	        cv::line(mat, imagePoints[1], imagePoints[5], cv::Scalar(0,255,0), 2);
 	        cv::line(mat, imagePoints[2], imagePoints[6], cv::Scalar(0,255,0), 2);
 	        cv::line(mat, imagePoints[3], imagePoints[7], cv::Scalar(0,255,0), 2);
-	        cv::line(mat, imagePoints[8], imagePoints[9], cv::Scalar(255,0,0), 2);
+	        cv::line(mat, imagePoints[8], imagePoints[9], cv::Scalar(255,0,0), 2); // Next three are coordinate pointers
 	        cv::line(mat, imagePoints[8], imagePoints[10], cv::Scalar(0,255,0), 2);
 	        cv::line(mat, imagePoints[8], imagePoints[11], cv::Scalar(0,0,255), 2);
         	std::string str = std::to_string(detection.id);
         	cv::putText(mat, str, imagePoints[8],cv::FONT_HERSHEY_DUPLEX,1,cv::Scalar(0,255,255),2,false);
 
-            double yaw = atan2(detection.orientation[1],detection.orientation[0]);
-        double pitch = atan2(-detection.orientation[2], sqrt(pow(detection.orientation[5],2) + pow(detection.orientation[8],2)));
-       double roll = atan2(detection.orientation[5],detection.orientation[8]);
-       std::cout << " " << yaw << ", " << pitch << ", " << roll << std::endl;
-       auto tagTranslation = frc::Translation3d(units::meter_t (detection.translation[2]), units::meter_t (detection.translation[0]), units::meter_t (0));
+        
+       auto tagTranslation = frc::Translation3d(units::meter_t (detection.translation[2]), units::meter_t (-detection.translation[0]), units::meter_t (0));
        auto tagTransform = frc::Transform3d(tagTranslation, frc::Rotation3d()); //put in pitch
        auto tagTranslationRot = frc::Translation3d();
-       auto tagTransformRot = frc::Transform3d(tagTranslation, frc::Rotation3d(units::radian_t (0), units::radian_t (0), units::radian_t (pitch))); //put in pitch
+       auto tagTransformRot = frc::Transform3d(tagTranslationRot, frc::Rotation3d(units::radian_t (0), units::radian_t (0), units::radian_t (pitch))); //put in pitch
 
        auto robotPose = fieldlayout.GetTagPose(detection.id).value_or(frc::Pose3d()) + tagTransformRot + tagTransform;
-       cv::circle(fieldMat,cv::Point(robotPose.X().value()*100,robotPose.Y().value()*100),20, cv::Scalar(255,255,0), 2);
+       cv::circle(fieldMat,cv::Point(robotPose.X().value()*100,robotPose.Y().value()*100),20, cv::Scalar(255* (detection.id & 1),255* (detection.id>>1 & 1),255* (detection.id>>2 & 1)), 2);
+       
 	}
-
 
     // draw field need const
         cv::rectangle(fieldMat, cv::Rect(5, 5, 1690, 840), cv::Scalar(0,255,0), 5);
@@ -314,12 +324,13 @@ process_image (void *           p, double fps)
 
         for(int i=1; i<9; i++) {
             auto pos = fieldlayout.GetTagPose(i).value_or(frc::Pose3d());
-            cv::putText(fieldMat, std::to_string(i), cv::Point(pos.X().value()*100,pos.Y().value()*100),cv::FONT_HERSHEY_DUPLEX,1,cv::Scalar(255,0,0),2,false);
+            cv::putText(fieldMat, std::to_string(i), cv::Point(pos.X().value()*100,pos.Y().value()*100),cv::FONT_HERSHEY_DUPLEX,1,cv::Scalar(255* (i & 1),255* (i>>1 & 1),255* (i>>2 & 1)),2,false);
         }
         std::string str = "fps: " + std::to_string(fps);
         cv::putText(mat, str, cv::Point(50,50),cv::FONT_HERSHEY_DUPLEX,1,cv::Scalar(255,0,0),2,false);
+
 	cvsource.PutFrame(mat);
-    cvsource2.PutFrame(fieldMat);
+        cvsource2.PutFrame(fieldMat);
 
     }
 }
@@ -725,7 +736,7 @@ init_device                     (void)
     init_userp (fmt.fmt.pix.sizeimage);
 
     const int error = nvCreateAprilTagsDetector(
-      &april_tags_handle, width, height, tile_size, cuAprilTagsFamily::NVAT_TAG16H5,
+      &april_tags_handle, width, height, tile_size, cuAprilTagsFamily::NVAT_TAG36H11,
       //&april_tags_handle, width, height, cuAprilTagsFamily::NVAT_TAG16H5,
       &cam_intrinsics, tag_size);
     if (error != 0) {
