@@ -89,7 +89,7 @@ LDFLAGS += \
 endif
 
 # All common header files
-CPPFLAGS += -std=c++20 \
+CPPFLAGS += -std=c++20 -Wno-psabi \
 	-I"$(TOP_DIR)/include" \
 	-I"$(TOP_DIR)/include/libjpeg-8b" \
 	-I"$(ALGO_CUDA_DIR)" \

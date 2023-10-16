@@ -83,6 +83,9 @@ struct buffer {
 
 const int team = 4143;
 
+const int fieldWidth = 1700;
+const int fieldHeight = 850;
+
 // Handle used to interface with the stereo library.
 cuAprilTagsHandle april_tags_handle = nullptr;
 
@@ -105,8 +108,8 @@ const std::vector<cv::Point3d> objectPoints = {
     cv::Point3d(.1, 0, 0),
     cv::Point3d(0, .1, 0),
     cv::Point3d(0, 0, -.1)};
-// cv::Mat distCoeffs = (cv::Mat_<double>(5, 1) << -0.4647801828154495, 0.2844034418347612, -0.008834734456932225, -0.01218903939069973, -0.1319188405435461);
-cv::Mat distCoeffs = (cv::Mat_<double>(5, 1) << 0.0, 0.0, 0.0, 0.0, 0.0);
+ cv::Mat distCoeffs = (cv::Mat_<double>(5, 1) << -0.4647801828154495, 0.2844034418347612, -0.008834734456932225, -0.01218903939069973, -0.1319188405435461);
+//cv::Mat distCoeffs = (cv::Mat_<double>(5, 1) << 0.0, 0.0, 0.0, 0.0, 0.0);
 
 // Output vector of detected Tags
 std::vector<cuAprilTagsID_t> tags;
@@ -138,13 +141,22 @@ static unsigned int field = V4L2_FIELD_NONE;
 auto ntinst = nt::NetworkTableInstance::GetDefault();
 
 cs::CvSource cvsource{"cvsource", cs::VideoMode::kMJPEG, (int)width, (int)height, 30};
-cs::CvSource cvsource2{"cvsource2", cs::VideoMode::kMJPEG, (int)850, (int)1700, 30};
+cs::CvSource cvsource2{"cvsource2", cs::VideoMode::kMJPEG, (int)fieldHeight, (int)fieldWidth, 30};
 cs::MjpegServer cvMjpegServer{"cvhttpserver", 1181};
 cs::MjpegServer cvMjpegServer2{"field", 1182};
 
 frc::AprilTagFieldLayout fieldlayout;
 
 const std::string_view config = "{ }";
+
+void matrixToRPY(const float *matrix, float &roll, float &pitch, float &yaw);
+void drawField(cv::Mat &fieldMat);
+void drawAprilBoundingBox(cuAprilTagsID_t detections, cv::Mat &mat);
+float tagDist(cuAprilTagsID_t tag);
+frc::Translation3d triangulate(cuAprilTagsID_t tag, cuAprilTagsID_t tagMinusOne);
+float lawOfCosines(float a, float b, float c);
+void print_pose3d(frc::Pose3d pos, std::string description);
+frc::Pose3d get_field_tag_corner(frc::Pose3d, int corner);
 
 static void
 errno_exit(const char *s) {
@@ -167,12 +179,6 @@ xioctl(int fd,
     return r;
 }
 
-void matrixToRPY(const float *matrix, float &roll, float &pitch, float &yaw);
-void drawField(cv::Mat &fieldMat);
-void drawAprilBoundingBox(cuAprilTagsID_t detections, cv::Mat &mat);
-float tagDist(cuAprilTagsID_t tag);
-frc::Translation3d triangulate(cuAprilTagsID_t tag, cuAprilTagsID_t tagMinusOne);
-float lawOfCosines(float a, float b, float c);
 
 static void
 process_image(void *p, double fps) {
@@ -196,37 +202,60 @@ process_image(void *p, double fps) {
         std::cout << "april tag detect error" << std::endl;
     }
 
+    // run solvePnP on all tag corners
+  std::vector<cv::Point2d> imagePoints;
+  std::vector<cv::Point3d> objectPoints;
+  cv::Mat rVec(3, 1, cv::DataType<double>::type, 0.0);
+  cv::Mat tVec(3, 1, cv::DataType<double>::type, 0.0);
+
     for (uint32_t i = 0; i < num_detections; i++) {
         const cuAprilTagsID_t &detection = tags[i];
-        if (detection.id > MAX_TAG_ID)
-            continue;
+        //if (detection.id > MAX_TAG_ID)
+        //    continue;
+	
+	auto tagPose =  fieldlayout.GetTagPose(detection.id).value_or(frc::Pose3d());
 
-        float distance = std::sqrt(
-            detection.translation[0] * detection.translation[0] +
-            detection.translation[1] * detection.translation[1] +
-            detection.translation[2] * detection.translation[2]);
+	    for(int i = 0; i < 4; i++){
+		imagePoints.push_back(cv::Point(detection.corners[i].x, detection.corners[i].y));
+		auto corner = get_field_tag_corner(tagPose, i);
+		objectPoints.push_back(cv::Point3d(corner.X().value(), corner.Y().value(), corner.Z().value()));
+	    }
+    }
+    if(num_detections > 0) {
+	    cv::solvePnP(objectPoints, imagePoints, intrinsicMat, distCoeffs, rVec, tVec, false, cv::SOLVEPNP_SQPNP);
+
+	   // std::cout << "tVec " << tVec << std::endl;
+	   // std::cout << "rVec " << rVec << std::endl;
     }
 
+    // print radians between multiple tags
+        if (num_detections > 1) {
+            for (uint32_t i = 1; i < num_detections; i++) {
+		    std::cout << sqrt(pow(tags[i].corners[0].x-tags[i-1].corners[0].x,2) + pow(tags[i].corners[0].y-tags[i-1].corners[0].y,2)) / cam_intrinsics.fx << " radians apart" << std::endl;
+	    }
+        } 
+
+
+    // output to cameraserver every 8 frames
     if (count % 8 == 0) {
         cv::Mat mat(height, width, CV_8UC3, cuda_out_buffer);
-        cv::Mat fieldMat(850, 1700, CV_8UC3);
+        cv::Mat fieldMat;
 
-        fieldMat = cv::Mat::zeros(cv::Size(fieldMat.cols, fieldMat.rows), CV_8UC3);
-
+        fieldMat = cv::Mat::zeros(cv::Size(fieldWidth, fieldHeight), CV_8UC3);
         for (uint32_t i = 0; i < num_detections; i++) {
             const cuAprilTagsID_t &detection = tags[i];
-            if (detection.id > MAX_TAG_ID)
-                continue;
+            //if (detection.id > MAX_TAG_ID)
+            //    continue;
 
             float roll, pitch, yaw;
             matrixToRPY(detection.orientation, pitch, yaw, roll);
 
             std::cout << yaw << std::endl;
 
-            if (fabs(roll) > 0.2)
-                continue;
-            if (fabs(pitch) > 0.5)
-                continue;
+            //if (fabs(roll) > 0.2)
+            //    continue;
+            //if (fabs(pitch) > 0.5)
+            //    continue;
 
             //" " << pitch << ", " <<    << ", " << yaw
             drawAprilBoundingBox(detection, mat);
@@ -234,18 +263,35 @@ process_image(void *p, double fps) {
             auto tagTranslation = frc::Translation3d(units::meter_t(detection.translation[2]), units::meter_t(-detection.translation[0]), units::meter_t(0));
             auto tagTransform = frc::Transform3d(tagTranslation, frc::Rotation3d());  // put in pitch
             auto tagTranslationRot = frc::Translation3d();
-            auto tagTransformRot = frc::Transform3d(tagTranslationRot, frc::Rotation3d(units::radian_t(0), units::radian_t(0), units::radian_t(yaw)));  // put in pitch
+            auto tagTransformRot = frc::Transform3d(tagTranslationRot, frc::Rotation3d(units::radian_t(0), units::radian_t(0), units::radian_t(-yaw)));  // put in pitch
 
-            auto robotPose = fieldlayout.GetTagPose(detection.id).value_or(frc::Pose3d()) + tagTransformRot + tagTransform;
-            cv::circle(fieldMat, cv::Point(robotPose.X().value() * 100, robotPose.Y().value() * 100), 20, cv::Scalar(255 * (detection.id & 1), 255 * (detection.id >> 1 & 1), 255 * (detection.id >> 2 & 1)), 2);
+	    auto tagPose =  fieldlayout.GetTagPose(detection.id).value_or(frc::Pose3d());
+            auto robotPose = tagPose + tagTransformRot + tagTransform;
+            cv::circle(fieldMat, cv::Point(robotPose.X().value() * 100, fieldHeight - robotPose.Y().value() * 100), 20, cv::Scalar(50 + 200 * (detection.id-1 & 1), 50 + 200 * (detection.id-1 >> 1 & 1), 50 + 200 * (detection.id-1 >> 2 & 1)), 2);
+
+
         }
 
-        if (num_detections > 1) {
-            for (uint32_t i = 1; i < num_detections; i++) {
-            }
-        }  // start of trangle
-
         drawField(fieldMat);
+    	if(num_detections > 0) {
+		// print solvePnP white dot
+		//std::cout << "rVec " << rVec << std::endl;
+		cv::Mat R;
+		cv::Rodrigues(rVec, R);
+		//next 2 lines worked too
+		//R = R.t();
+		//tVec = -R * tVec;
+		//std::cout << "transformed tVec " << tVec << std::endl;
+		cv::Mat T = cv::Mat::eye(4, 4, R.type()); // T is 4x4
+		T( cv::Range(0,3), cv::Range(0,3) ) = R * 1; // copies R into T
+		T( cv::Range(0,3), cv::Range(3,4) ) = tVec * 1; // copies tvec into T
+		//std::cout << "world T " << T << std::endl;
+		T = T.inv();
+		//std::cout << "camera T " << T << std::endl;
+		std::cout << T.at<double>(0,3) << " " << T.at<double>(1,3) << " " << T.at<double>(2,3) << std::endl;
+		cv::circle(fieldMat, cv::Point(T.at<double>(0,3) * 100, fieldHeight - T.at<double>(1,3) * 100), 10, cv::Scalar(255,255,255), 20);
+	}
+
 
         std::string str = "fps: " + std::to_string(fps);
         cv::putText(mat, str, cv::Point(50, 50), cv::FONT_HERSHEY_DUPLEX, 1, cv::Scalar(255, 0, 0), 2, false);
@@ -263,13 +309,16 @@ void matrixToRPY(const float *matrix, float &roll, float &pitch, float &yaw) {
 
 void drawField(cv::Mat &fieldMat) {
     // draw field need const
-    cv::rectangle(fieldMat, cv::Rect(5, 5, 1690, 840), cv::Scalar(0, 255, 0), 5);
-    cv::line(fieldMat, cv::Point(850, 0), cv::Point(850, 850), cv::Scalar(0, 0, 255), 2);
-    cv::circle(fieldMat, cv::Point(850, 425), 100, cv::Scalar(255, 0, 0), 2);
+    cv::line(fieldMat, cv::Point(5, 5), cv::Point(fieldWidth-10, 5), cv::Scalar(0, 255, 0), 5);
+    cv::line(fieldMat, cv::Point(5, fieldHeight-5), cv::Point(fieldWidth-10, fieldHeight-5), cv::Scalar(0, 255, 0), 5);
+    cv::line(fieldMat, cv::Point(fieldHeight, 0), cv::Point(fieldHeight, fieldHeight), cv::Scalar(0, 255, 0), 2);
+    cv::line(fieldMat, cv::Point(5, 5), cv::Point(5, fieldHeight-5), cv::Scalar(255, 0, 0), 5);
+    cv::line(fieldMat, cv::Point(fieldWidth-5, 5), cv::Point(fieldWidth-5, fieldHeight-5), cv::Scalar(0, 0, 255), 5);
+    cv::circle(fieldMat, cv::Point(fieldHeight, fieldHeight/2), 100, cv::Scalar(0, 255, 0), 2);
 
     for (int i = 1; i < 9; i++) {
         auto pos = fieldlayout.GetTagPose(i).value_or(frc::Pose3d());
-        cv::putText(fieldMat, std::to_string(i), cv::Point(pos.X().value() * 100, pos.Y().value() * 100), cv::FONT_HERSHEY_DUPLEX, 1, cv::Scalar(255 * (i & 1), 255 * (i >> 1 & 1), 255 * (i >> 2 & 1)), 2, false);
+        cv::putText(fieldMat, std::to_string(i), cv::Point(pos.X().value() * 100, fieldHeight-pos.Y().value() * 100), cv::FONT_HERSHEY_DUPLEX, 1, cv::Scalar(50 + 200 * (i-1 & 1), 50 + 200 * (i-1 >> 1 & 1), 50 + 200 * (i-1 >> 2 & 1)), 2, false);
     }
 }
 
@@ -322,6 +371,10 @@ void drawAprilBoundingBox(cuAprilTagsID_t detection, cv::Mat &mat) {
     cv::line(mat, imagePoints[8], imagePoints[11], cv::Scalar(0, 0, 255), 2);
     std::string str = std::to_string(detection.id);
     cv::putText(mat, str, imagePoints[8], cv::FONT_HERSHEY_DUPLEX, 1, cv::Scalar(0, 255, 255), 2, false);
+    cv::putText(mat, "0", tag_points[0], cv::FONT_HERSHEY_DUPLEX, 1, cv::Scalar(255, 0, 255), 2, false);
+    cv::putText(mat, "1", tag_points[1], cv::FONT_HERSHEY_DUPLEX, 1, cv::Scalar(255, 0, 255), 2, false);
+    cv::putText(mat, "2", tag_points[2], cv::FONT_HERSHEY_DUPLEX, 1, cv::Scalar(255, 0, 255), 2, false);
+    cv::putText(mat, "3", tag_points[3], cv::FONT_HERSHEY_DUPLEX, 1, cv::Scalar(255, 0, 255), 2, false);
 }
 
 float tagDist(cuAprilTagsID_t tag) {
@@ -331,16 +384,17 @@ float tagDist(cuAprilTagsID_t tag) {
 frc::Translation3d triangulate(cuAprilTagsID_t tag, cuAprilTagsID_t tagMinusOne) {
     auto iTagPos = fieldlayout.GetTagPose(tag.id).value_or(frc::Pose3d());
     auto iTagPosMinusOne = fieldlayout.GetTagPose(tagMinusOne.id).value_or(frc::Pose3d());
-    float tagDistance = (iTagPos - iTagPosMinusOne).Norm();
-    auto camToI = frc::Translation3d(units::meter_t(tag.translation[2]), units::meter_t(-tag.translation[0]), units::meter_t(0));
-    auto camToIMinusOne = frc::Translation3d(units::meter_t(tagMinusOne.translation[2]), units::meter_t(-tagMinusOne.translation[0]), units::meter_t(0));
-    float iTagDistance = camToI.Norm();
-    float iTagDistanceMinusOne = camToIMinusOne.Norm();
-    float gammaI = lawOfCosines(tagDistance, iTagDistance, iTagDistanceMinusOne);
-    float gammaIMinusOne = lawOfCosines(tagDistance, iTagDistanceMinusOne, iTagDistance);
-    auto iEstimatedTag = frc::Translation3d(units::meter_t(iTagDistance), units::meter_t(0), units::meter_t(0))
-                             .RotateBy(frc::);
-    auto robotPos1 = iTagPos.Translation() +
+    //float tagDistance = (iTagPos - iTagPosMinusOne).Norm();
+    //auto camToI = frc::Translation3d(units::meter_t(tag.translation[2]), units::meter_t(-tag.translation[0]), units::meter_t(0));
+    //auto camToIMinusOne = frc::Translation3d(units::meter_t(tagMinusOne.translation[2]), units::meter_t(-tagMinusOne.translation[0]), units::meter_t(0));
+    //float iTagDistance = camToI.Norm();
+    //float iTagDistanceMinusOne = camToIMinusOne.Norm();
+    //float gammaI = lawOfCosines(tagDistance, iTagDistance, iTagDistanceMinusOne);
+    //float gammaIMinusOne = lawOfCosines(tagDistance, iTagDistanceMinusOne, iTagDistance);
+    //auto iEstimatedTag = frc::Translation3d(units::meter_t(iTagDistance), units::meter_t(0), units::meter_t(0))
+                             //.RotateBy(frc::);
+    //auto robotPos1 = iTagPos.Translation() +
+    return frc::Translation3d();
 }
 
 float lawOfCosines(float a, float b, float c) {
@@ -801,6 +855,27 @@ init_cuda(void) {
     cudaDeviceSynchronize();
 }
 
+void print_pose3d(frc::Pose3d pos, std::string description) {
+        std::cout << description << " " << pos.X().value() << " " << pos.Y().value() << " " << pos.Z().value() << std::endl;
+        std::cout << "   rotation " << pos.Rotation().X().value() << " " << pos.Rotation().Y().value() << " " << pos.Rotation().Z().value() << std::endl;
+};
+
+
+frc::Pose3d get_field_tag_corner(frc::Pose3d pos, int corner) {
+	switch(corner) {
+	   case 0:
+		return pos + frc::Transform3d(frc::Translation3d(0_m,-.08_m,.08_m),frc::Rotation3d());
+	   case 1:
+		return pos + frc::Transform3d(frc::Translation3d(0_m,.08_m,.08_m),frc::Rotation3d());
+	   case 2:
+		return pos + frc::Transform3d(frc::Translation3d(0_m,.08_m,-.08_m),frc::Rotation3d());
+	   case 3:
+		return pos + frc::Transform3d(frc::Translation3d(0_m,-.08_m,-.08_m),frc::Rotation3d());
+	   default:
+		return frc::Pose3d();
+	}
+}
+
 static void
 init_wpilib(void) {
     std::cout << "Setting up NetworkTables client for team " << team << std::endl;
@@ -834,9 +909,19 @@ init_wpilib(void) {
     cvMjpegServer2.SetSource(cvsource2);
 
     fieldlayout = frc::LoadAprilTagLayoutField(frc::AprilTagField::k2023ChargedUp);
-    for (int i = 1; i < 9; i++) {
+    std::cout << "Field tag positions" << std::endl;
+    for (int i = 1; i < 586; i++) {
+	if(!fieldlayout.GetTagPose(i)) break;
         auto pos = fieldlayout.GetTagPose(i).value_or(frc::Pose3d());
-        std::cout << i << " " << pos.X().value() << " " << pos.Y().value() << std::endl;
+	print_pose3d(pos, std::to_string(i));
+	auto corner0 = pos + frc::Transform3d(frc::Translation3d(0_m,-.08_m,.08_m),frc::Rotation3d());
+	print_pose3d(corner0, "corner0");
+	auto corner1 = pos + frc::Transform3d(frc::Translation3d(0_m,.08_m,.08_m),frc::Rotation3d());
+	print_pose3d(corner1, "corner1");
+	auto corner2 = pos + frc::Transform3d(frc::Translation3d(0_m,.08_m,-.08_m),frc::Rotation3d());
+	print_pose3d(corner2, "corner2");
+	auto corner3 = pos + frc::Transform3d(frc::Translation3d(0_m,-.08_m,-.08_m),frc::Rotation3d());
+	print_pose3d(corner3, "corner3");
     }
     intrinsicMat.at<double>(0, 0) = cam_intrinsics.fx;
     intrinsicMat.at<double>(1, 0) = 0;
