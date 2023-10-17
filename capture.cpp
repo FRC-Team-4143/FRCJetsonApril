@@ -1,38 +1,12 @@
-/*
- * Copyright (c) 2015, NVIDIA CORPORATION. All rights reserved.
- *
- * Permission is hereby granted, free of charge, to any person obtaining a
- * copy of this software and associated documentation files (the "Software"),
- * to deal in the Software without restriction, including without limitation
- * the rights to use, copy, modify, merge, publish, distribute, sublicense,
- * and/or sell copies of the Software, and to permit persons to whom the
- * Software is furnished to do so, subject to the following conditions:
- *
- * The above copyright notice and this permission notice shall be included in
- * all copies or substantial portions of the Software.
- *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.  IN NO EVENT SHALL
- * THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
- * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
- * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
- * DEALINGS IN THE SOFTWARE.
- */
-
-/*
- *  V4L2 video capture example
- */
-
-#include <asm/types.h> /* for videodev2.h */
+#include <asm/types.h>
 #include <assert.h>
 #include <cscore.h>
 #include <cscore_cv.h>
 #include <cuda_runtime.h>
 #include <errno.h>
-#include <fcntl.h> /* low-level i/o */
+#include <fcntl.h> 
 #include <fmt/format.h>
-#include <getopt.h> /* getopt_long() */
+#include <getopt.h>
 #include <linux/videodev2.h>
 #include <malloc.h>
 #include <networktables/NetworkTableInstance.h>
@@ -86,6 +60,10 @@ const int team = 4143;
 const int fieldWidth = 1700;
 const int fieldHeight = 850;
 
+const int csDecimate = 2;
+
+cv::Mat fieldMatEmpty;
+
 // Handle used to interface with the stereo library.
 cuAprilTagsHandle april_tags_handle = nullptr;
 
@@ -117,9 +95,10 @@ std::vector<cuAprilTagsID_t> tags;
 // CUDA stream
 cudaStream_t main_stream = {};
 
-float tag_size = .16;  // same units as camera calib
-int max_tags = 5;
-int tile_size = 24;
+const float tag_size = .16;  // same units as camera calib
+#define HALFTAGSIZE .08_m
+const int max_tags = 4;
+const int tile_size = 24;
 
 cuAprilTagsImageInput_t input_image;
 
@@ -140,9 +119,9 @@ static unsigned int field = V4L2_FIELD_NONE;
 
 auto ntinst = nt::NetworkTableInstance::GetDefault();
 
-cs::CvSource cvsource{"cvsource", cs::VideoMode::kMJPEG, (int)width, (int)height, 30};
-cs::CvSource cvsource2{"cvsource2", cs::VideoMode::kMJPEG, (int)fieldHeight, (int)fieldWidth, 30};
-cs::MjpegServer cvMjpegServer{"cvhttpserver", 1181};
+cs::CvSource cvsource{"cvsource", cs::VideoMode::kMJPEG, (int)width/csDecimate, (int)height/csDecimate, 8};
+cs::CvSource cvsource2{"cvsource2", cs::VideoMode::kMJPEG, (int)fieldHeight/csDecimate, (int)fieldWidth/csDecimate, 8};
+cs::MjpegServer cvMjpegServer{dev_name, 1181};
 cs::MjpegServer cvMjpegServer2{"field", 1182};
 
 frc::AprilTagFieldLayout fieldlayout;
@@ -207,6 +186,7 @@ process_image(void *p, double fps) {
   std::vector<cv::Point3d> objectPoints;
   cv::Mat rVec(3, 1, cv::DataType<double>::type, 0.0);
   cv::Mat tVec(3, 1, cv::DataType<double>::type, 0.0);
+  cv::Mat R;
 
     for (uint32_t i = 0; i < num_detections; i++) {
         const cuAprilTagsID_t &detection = tags[i];
@@ -226,22 +206,28 @@ process_image(void *p, double fps) {
 
 	   // std::cout << "tVec " << tVec << std::endl;
 	   // std::cout << "rVec " << rVec << std::endl;
+	// inverse the projections from world to camera
+	cv::Rodrigues(rVec, R);
+	R = R.t();
+	tVec = -R * tVec;
+	std::cout << "camera position X:" << tVec.at<double>(0) << " Y:" << tVec.at<double>(1) << " Z:" << tVec.at<double>(2) << std::endl;
     }
 
     // print radians between multiple tags
+    /*
         if (num_detections > 1) {
             for (uint32_t i = 1; i < num_detections; i++) {
 		    std::cout << sqrt(pow(tags[i].corners[0].x-tags[i-1].corners[0].x,2) + pow(tags[i].corners[0].y-tags[i-1].corners[0].y,2)) / cam_intrinsics.fx << " radians apart" << std::endl;
 	    }
         } 
+    */
 
 
     // output to cameraserver every 8 frames
     if (count % 8 == 0) {
         cv::Mat mat(height, width, CV_8UC3, cuda_out_buffer);
-        cv::Mat fieldMat;
+        cv::Mat fieldMat = fieldMatEmpty.clone();
 
-        fieldMat = cv::Mat::zeros(cv::Size(fieldWidth, fieldHeight), CV_8UC3);
         for (uint32_t i = 0; i < num_detections; i++) {
             const cuAprilTagsID_t &detection = tags[i];
             //if (detection.id > MAX_TAG_ID)
@@ -250,14 +236,8 @@ process_image(void *p, double fps) {
             float roll, pitch, yaw;
             matrixToRPY(detection.orientation, pitch, yaw, roll);
 
-            std::cout << yaw << std::endl;
+            //std::cout << yaw << std::endl;
 
-            //if (fabs(roll) > 0.2)
-            //    continue;
-            //if (fabs(pitch) > 0.5)
-            //    continue;
-
-            //" " << pitch << ", " <<    << ", " << yaw
             drawAprilBoundingBox(detection, mat);
 
             auto tagTranslation = frc::Translation3d(units::meter_t(detection.translation[2]), units::meter_t(-detection.translation[0]), units::meter_t(0));
@@ -272,31 +252,19 @@ process_image(void *p, double fps) {
 
         }
 
-        drawField(fieldMat);
     	if(num_detections > 0) {
 		// print solvePnP white dot
-		//std::cout << "rVec " << rVec << std::endl;
-		cv::Mat R;
-		cv::Rodrigues(rVec, R);
-		//next 2 lines worked too
-		//R = R.t();
-		//tVec = -R * tVec;
-		//std::cout << "transformed tVec " << tVec << std::endl;
-		cv::Mat T = cv::Mat::eye(4, 4, R.type()); // T is 4x4
-		T( cv::Range(0,3), cv::Range(0,3) ) = R * 1; // copies R into T
-		T( cv::Range(0,3), cv::Range(3,4) ) = tVec * 1; // copies tvec into T
-		//std::cout << "world T " << T << std::endl;
-		T = T.inv();
-		//std::cout << "camera T " << T << std::endl;
-		std::cout << T.at<double>(0,3) << " " << T.at<double>(1,3) << " " << T.at<double>(2,3) << std::endl;
-		cv::circle(fieldMat, cv::Point(T.at<double>(0,3) * 100, fieldHeight - T.at<double>(1,3) * 100), 10, cv::Scalar(255,255,255), 20);
+		cv::circle(fieldMat, cv::Point(tVec.at<double>(0) * 100, fieldHeight - tVec.at<double>(1) * 100), 10, cv::Scalar(255,255,255), 20);
+        	cv::putText(fieldMat, std::to_string(num_detections), cv::Point(tVec.at<double>(0) * 100 - 10, fieldHeight - tVec.at<double>(1) * 100 + 10), cv::FONT_HERSHEY_DUPLEX, 1, cv::Scalar(0,0,0), 2, false);
 	}
-
 
         std::string str = "fps: " + std::to_string(fps);
         cv::putText(mat, str, cv::Point(50, 50), cv::FONT_HERSHEY_DUPLEX, 1, cv::Scalar(255, 0, 0), 2, false);
 
+	cv::resize(mat,mat,cv::Size(mat.cols/csDecimate, mat.rows/csDecimate), 0, 0, cv::INTER_NEAREST);
         cvsource.PutFrame(mat);
+
+	cv::resize(fieldMat,fieldMat,cv::Size(fieldMat.cols/csDecimate, fieldMat.rows/csDecimate), 0, 0, cv::INTER_NEAREST);
         cvsource2.PutFrame(fieldMat);
     }
 }
@@ -318,7 +286,7 @@ void drawField(cv::Mat &fieldMat) {
 
     for (int i = 1; i < 9; i++) {
         auto pos = fieldlayout.GetTagPose(i).value_or(frc::Pose3d());
-        cv::putText(fieldMat, std::to_string(i), cv::Point(pos.X().value() * 100, fieldHeight-pos.Y().value() * 100), cv::FONT_HERSHEY_DUPLEX, 1, cv::Scalar(50 + 200 * (i-1 & 1), 50 + 200 * (i-1 >> 1 & 1), 50 + 200 * (i-1 >> 2 & 1)), 2, false);
+        cv::putText(fieldMat, std::to_string(i), cv::Point(pos.X().value() * 100, fieldHeight-pos.Y().value() * 100), cv::FONT_HERSHEY_DUPLEX, 2, cv::Scalar(50 + 200 * (i-1 & 1), 50 + 200 * (i-1 >> 1 & 1), 50 + 200 * (i-1 >> 2 & 1)), 2, false);
     }
 }
 
@@ -864,13 +832,13 @@ void print_pose3d(frc::Pose3d pos, std::string description) {
 frc::Pose3d get_field_tag_corner(frc::Pose3d pos, int corner) {
 	switch(corner) {
 	   case 0:
-		return pos + frc::Transform3d(frc::Translation3d(0_m,-.08_m,.08_m),frc::Rotation3d());
+		return pos + frc::Transform3d(frc::Translation3d(0_m,-HALFTAGSIZE,HALFTAGSIZE),frc::Rotation3d());
 	   case 1:
-		return pos + frc::Transform3d(frc::Translation3d(0_m,.08_m,.08_m),frc::Rotation3d());
+		return pos + frc::Transform3d(frc::Translation3d(0_m,HALFTAGSIZE,HALFTAGSIZE),frc::Rotation3d());
 	   case 2:
-		return pos + frc::Transform3d(frc::Translation3d(0_m,.08_m,-.08_m),frc::Rotation3d());
+		return pos + frc::Transform3d(frc::Translation3d(0_m,HALFTAGSIZE,-HALFTAGSIZE),frc::Rotation3d());
 	   case 3:
-		return pos + frc::Transform3d(frc::Translation3d(0_m,-.08_m,-.08_m),frc::Rotation3d());
+		return pos + frc::Transform3d(frc::Translation3d(0_m,-HALFTAGSIZE,-HALFTAGSIZE),frc::Rotation3d());
 	   default:
 		return frc::Pose3d();
 	}
@@ -908,19 +876,21 @@ init_wpilib(void) {
 
     cvMjpegServer2.SetSource(cvsource2);
 
+    fieldMatEmpty = cv::Mat::zeros(cv::Size(fieldWidth, fieldHeight), CV_8UC3);
     fieldlayout = frc::LoadAprilTagLayoutField(frc::AprilTagField::k2023ChargedUp);
+    drawField(fieldMatEmpty);  // just draw field once
     std::cout << "Field tag positions" << std::endl;
     for (int i = 1; i < 586; i++) {
 	if(!fieldlayout.GetTagPose(i)) break;
         auto pos = fieldlayout.GetTagPose(i).value_or(frc::Pose3d());
 	print_pose3d(pos, std::to_string(i));
-	auto corner0 = pos + frc::Transform3d(frc::Translation3d(0_m,-.08_m,.08_m),frc::Rotation3d());
+        auto corner0 = get_field_tag_corner(pos, 0);
+        auto corner1 = get_field_tag_corner(pos, 1);
+        auto corner2 = get_field_tag_corner(pos, 2);
+        auto corner3 = get_field_tag_corner(pos, 3);
 	print_pose3d(corner0, "corner0");
-	auto corner1 = pos + frc::Transform3d(frc::Translation3d(0_m,.08_m,.08_m),frc::Rotation3d());
 	print_pose3d(corner1, "corner1");
-	auto corner2 = pos + frc::Transform3d(frc::Translation3d(0_m,.08_m,-.08_m),frc::Rotation3d());
 	print_pose3d(corner2, "corner2");
-	auto corner3 = pos + frc::Transform3d(frc::Translation3d(0_m,-.08_m,-.08_m),frc::Rotation3d());
 	print_pose3d(corner3, "corner3");
     }
     intrinsicMat.at<double>(0, 0) = cam_intrinsics.fx;
