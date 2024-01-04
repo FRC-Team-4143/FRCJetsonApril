@@ -1,3 +1,5 @@
+Currently setup for 36H11 tags and Innovision ov9281 camera
+
 Optional install on SSD with instructions here:
 https://jetsonhacks.com/2023/05/30/jetson-orin-nano-tutorial-ssd-install-boot-and-jetpack-setup/
 Or use SD card image
@@ -9,24 +11,22 @@ https://github.com/mdegans/nano_build_opencv
 jtop should show something like this on INFO tab:
 OpenCV: 4.8.0 with CUDA: YES
 
-
 Get NVIDIA apriltag library from:
 https://github.com/NVIDIA-ISAAC-ROS/isaac_ros_nitros/blob/main/isaac_ros_nitros/lib/cuapriltags/lib_aarch64_jetpack51/libcuapriltags.a   committed on Aug 1,2023 commit dc959fb
 
-bspatch libcuapriltags.a libcuapriltags16h5.a libcuapriltags16h5.a.bspatch
-
 download kernel sources and apply patch for Innovision ov9281 camera.
-#TODO detailed instructions.
+kernel sources are here https://developer.nvidia.com/downloads/embedded/l4t/r35_release_v3.1/sources/public_sources.tbz2/
+apply orinov9281working8bitkernel35.3.1.patch to nvidia kernel sources
+run rjsorinkernelbuild.sh to build and install -tegra4143
+modify /boot/extlinux/extlinux.conf to allow custom kernel booting
 
-must run sudo ./debugcamera.sh to increase clock speeds on every boot
+build and install https://github.com/wpilibsuite/allwpilib from source
 
-capture-cuda requires Innovision camera
+use make to build capture-cuda
 
+must run sudo ./debugcamera.sh to increase clock speeds on every boot see rc.local
 
-
-capturestockrpiv2 should read 16H5 tags. tested with both RPIv2 camera and an Arducam IMX219 on a Jetson Orin Nano devkit with stock kernel on JetPack 5.1.1.  This has been abandoned for ov9281 camera.
-
-
+capture-cuda is setup for 36H11 tags and Innovision camera ov9281 with custom kernel
 
 
 
