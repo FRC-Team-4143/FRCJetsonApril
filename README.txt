@@ -21,6 +21,7 @@ run rjsorinkernelbuild.sh to build and install -tegra4143
 modify /boot/extlinux/extlinux.conf to allow custom kernel booting
 
 build and install https://github.com/wpilibsuite/allwpilib from source
+cmake .. -DWITH_JAVA=OFF -DWITH_GUI=OFF -DWITH_EXAMPLES=OFF -DWITH_TESTS=OFF
 
 use make to build capture-cuda
 

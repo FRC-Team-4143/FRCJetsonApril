@@ -59,6 +59,7 @@ const int team = 4143;
 
 const int fieldWidth = 1700;
 const int fieldHeight = 850;
+//100px in a meater
 
 const int csDecimate = 2;
 
@@ -282,9 +283,25 @@ void drawField(cv::Mat &fieldMat) {
     cv::line(fieldMat, cv::Point(fieldHeight, 0), cv::Point(fieldHeight, fieldHeight), cv::Scalar(0, 255, 0), 2);
     cv::line(fieldMat, cv::Point(5, 5), cv::Point(5, fieldHeight-5), cv::Scalar(255, 0, 0), 5);
     cv::line(fieldMat, cv::Point(fieldWidth-5, 5), cv::Point(fieldWidth-5, fieldHeight-5), cv::Scalar(0, 0, 255), 5);
-    cv::circle(fieldMat, cv::Point(fieldHeight, fieldHeight/2), 100, cv::Scalar(0, 255, 0), 2);
+    
+    //wing lines 5.876meters from wall
+    cv::line(fieldMat, cv::Point(587, 5), cv::Point(587, fieldHeight-5), cv::Scalar(255, 0, 0), 5);
+    cv::line(fieldMat, cv::Point(fieldWidth-587, 5), cv::Point(fieldWidth-587, fieldHeight-5), cv::Scalar(0, 0, 255), 5);
 
-    for (int i = 1; i < 9; i++) {
+    //amp zones 3.302meters from wall 0.4572meter from other wall
+    cv::line(fieldMat, cv::Point(fieldWidth-5, 45), cv::Point(fieldWidth-330, 45), cv::Scalar(0, 0, 255), 5);
+    cv::line(fieldMat, cv::Point(fieldWidth-330, 5), cv::Point(fieldWidth-330, 45), cv::Scalar(0, 0, 255), 5);
+    cv::line(fieldMat, cv::Point(330, 5), cv::Point(330, 45), cv::Scalar(255, 0, 0), 5);
+    cv::line(fieldMat, cv::Point(5, 45), cv::Point(330, 45), cv::Scalar(255, 0, 0), 5);
+
+    //stage zones 3.073meters from wall 3.115meters wide
+    cv::line(fieldMat, cv::Point(307, fieldHeight/2), cv::Point(587, fieldHeight/2 + 155), cv::Scalar(255, 0, 0), 5);
+    cv::line(fieldMat, cv::Point(307, fieldHeight/2), cv::Point(587, fieldHeight/2 - 155), cv::Scalar(255, 0, 0), 5);
+    cv::line(fieldMat, cv::Point(fieldWidth-307, fieldHeight/2), cv::Point(fieldWidth-587, fieldHeight/2 + 155), cv::Scalar(0, 0, 255), 5);
+    cv::line(fieldMat, cv::Point(fieldWidth-307, fieldHeight/2), cv::Point(fieldWidth-587, fieldHeight/2 - 155), cv::Scalar(0, 0, 255), 5);
+
+
+    for (int i = 1; i < 17; i++) {
         auto pos = fieldlayout.GetTagPose(i).value_or(frc::Pose3d());
         cv::putText(fieldMat, std::to_string(i), cv::Point(pos.X().value() * 100, fieldHeight-pos.Y().value() * 100), cv::FONT_HERSHEY_DUPLEX, 2, cv::Scalar(50 + 200 * (i-1 & 1), 50 + 200 * (i-1 >> 1 & 1), 50 + 200 * (i-1 >> 2 & 1)), 2, false);
     }
@@ -877,7 +894,7 @@ init_wpilib(void) {
     cvMjpegServer2.SetSource(cvsource2);
 
     fieldMatEmpty = cv::Mat::zeros(cv::Size(fieldWidth, fieldHeight), CV_8UC3);
-    fieldlayout = frc::LoadAprilTagLayoutField(frc::AprilTagField::k2023ChargedUp);
+    fieldlayout = frc::LoadAprilTagLayoutField(frc::AprilTagField::k2024Crescendo);
     drawField(fieldMatEmpty);  // just draw field once
     std::cout << "Field tag positions" << std::endl;
     for (int i = 1; i < 586; i++) {
