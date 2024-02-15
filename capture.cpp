@@ -159,6 +159,22 @@ xioctl(int fd,
     return r;
 }
 
+cv::Vec3f rotationMatrixToEulerAngles(cv::Mat &R) {
+    //assert(isRotationMatrix(R));
+    float sy = sqrt(R.at<double>(0,0) * R.at<double>(0,0) + R.at<double> (1,0) * R.at<double> (1,0));
+    bool singular = sy < 1e-6;
+    float x, y, z;
+    if (!singular) {
+        x = atan2(R.at<double>(2,1), R.at<double>(2,2));
+        y = atan2(-R.at<double>(2,0), sy);
+        z = atan2(R.at<double>(1,0), R.at<double>(0,0));
+    } else {
+        x = atan2(-R.at<double>(1,2), R.at<double>(1,1));
+        y = atan2(-R.at<double>(2,0), sy);
+        z = 0;
+    }
+    return cv::Vec3f(x, y, z);
+}
 
 static void
 process_image(void *p, double fps) {
@@ -188,6 +204,7 @@ process_image(void *p, double fps) {
   cv::Mat rVec(3, 1, cv::DataType<double>::type, 0.0);
   cv::Mat tVec(3, 1, cv::DataType<double>::type, 0.0);
   cv::Mat R;
+  cv::Mat EulerAngles;
 
     for (uint32_t i = 0; i < num_detections; i++) {
         const cuAprilTagsID_t &detection = tags[i];
@@ -211,6 +228,7 @@ process_image(void *p, double fps) {
 	cv::Rodrigues(rVec, R);
 	R = R.t();
 	tVec = -R * tVec;
+    EulerAngles = rotationMatrixToEulerAngles(R);
 	std::cout << "camera position X:" << tVec.at<double>(0) << " Y:" << tVec.at<double>(1) << " Z:" << tVec.at<double>(2) << std::endl;
     }
 
@@ -257,6 +275,13 @@ process_image(void *p, double fps) {
 		// print solvePnP white dot
 		cv::circle(fieldMat, cv::Point(tVec.at<double>(0) * 100, fieldHeight - tVec.at<double>(1) * 100), 10, cv::Scalar(255,255,255), 20);
         	cv::putText(fieldMat, std::to_string(num_detections), cv::Point(tVec.at<double>(0) * 100 - 10, fieldHeight - tVec.at<double>(1) * 100 + 10), cv::FONT_HERSHEY_DUPLEX, 1, cv::Scalar(0,0,0), 2, false);
+		auto table = ntinst.GetTable("WarVision");
+    		table->PutNumber("botposeX", tVec.at<double>(0));
+    		table->PutNumber("botposeY", tVec.at<double>(1));
+    		table->PutNumber("botposeZ", tVec.at<double>(2));
+            table->PutNumber("EulerAngleX", EulerAngles.at<double>(0));
+    		table->PutNumber("EulerAngleY", EulerAngles.at<double>(1));
+    		table->PutNumber("EulerAngleZ", EulerAngles.at<double>(2));
 	}
 
         std::string str = "fps: " + std::to_string(fps);
