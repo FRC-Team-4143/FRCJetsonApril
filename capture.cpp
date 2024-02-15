@@ -159,6 +159,7 @@ xioctl(int fd,
     return r;
 }
 
+// 0 == Pitch 1 == Roll 2 == Yaw 
 cv::Vec3f rotationMatrixToEulerAngles(cv::Mat &R) {
     //assert(isRotationMatrix(R));
     float sy = sqrt(R.at<double>(0,0) * R.at<double>(0,0) + R.at<double> (1,0) * R.at<double> (1,0));
@@ -204,7 +205,7 @@ process_image(void *p, double fps) {
   cv::Mat rVec(3, 1, cv::DataType<double>::type, 0.0);
   cv::Mat tVec(3, 1, cv::DataType<double>::type, 0.0);
   cv::Mat R;
-  cv::Mat EulerAngles;
+  cv::Vec3f EulerAngles;
 
     for (uint32_t i = 0; i < num_detections; i++) {
         const cuAprilTagsID_t &detection = tags[i];
@@ -230,6 +231,18 @@ process_image(void *p, double fps) {
 	tVec = -R * tVec;
     EulerAngles = rotationMatrixToEulerAngles(R);
 	std::cout << "camera position X:" << tVec.at<double>(0) << " Y:" << tVec.at<double>(1) << " Z:" << tVec.at<double>(2) << std::endl;
+    std::cout << "EulerAngles X:" << EulerAngles[0] << " Y:" << EulerAngles[1] << " Z:"<< EulerAngles[2] << std::endl;
+            
+            auto table = ntinst.GetTable("WarVision");
+            std::cout << "test 1";
+    		table->PutNumber("botposeX", tVec.at<double>(0));
+    		table->PutNumber("botposeY", tVec.at<double>(1));
+    		table->PutNumber("botposeZ", tVec.at<double>(2));
+            std::cout << "test 2";
+            table->PutNumber("EulerAngleX", EulerAngles[0]);
+    		table->PutNumber("EulerAngleY", EulerAngles[1]);
+    		table->PutNumber("EulerAngleZ", EulerAngles[2]);
+            std::cout << "test 3";
     }
 
     // print radians between multiple tags
@@ -240,7 +253,6 @@ process_image(void *p, double fps) {
 	    }
         } 
     */
-
 
     // output to cameraserver every 8 frames
     if (count % 8 == 0) {
@@ -275,13 +287,6 @@ process_image(void *p, double fps) {
 		// print solvePnP white dot
 		cv::circle(fieldMat, cv::Point(tVec.at<double>(0) * 100, fieldHeight - tVec.at<double>(1) * 100), 10, cv::Scalar(255,255,255), 20);
         	cv::putText(fieldMat, std::to_string(num_detections), cv::Point(tVec.at<double>(0) * 100 - 10, fieldHeight - tVec.at<double>(1) * 100 + 10), cv::FONT_HERSHEY_DUPLEX, 1, cv::Scalar(0,0,0), 2, false);
-		auto table = ntinst.GetTable("WarVision");
-    		table->PutNumber("botposeX", tVec.at<double>(0));
-    		table->PutNumber("botposeY", tVec.at<double>(1));
-    		table->PutNumber("botposeZ", tVec.at<double>(2));
-            table->PutNumber("EulerAngleX", EulerAngles.at<double>(0));
-    		table->PutNumber("EulerAngleY", EulerAngles.at<double>(1));
-    		table->PutNumber("EulerAngleZ", EulerAngles.at<double>(2));
 	}
 
         std::string str = "fps: " + std::to_string(fps);
