@@ -230,19 +230,16 @@ process_image(void *p, double fps) {
 	R = R.t();
 	tVec = -R * tVec;
     EulerAngles = rotationMatrixToEulerAngles(R);
-	std::cout << "camera position X:" << tVec.at<double>(0) << " Y:" << tVec.at<double>(1) << " Z:" << tVec.at<double>(2) << std::endl;
-    std::cout << "EulerAngles X:" << EulerAngles[0] << " Y:" << EulerAngles[1] << " Z:"<< EulerAngles[2] << std::endl;
+	//std::cout << "camera position X:" << tVec.at<double>(0) << " Y:" << tVec.at<double>(1) << " Z:" << tVec.at<double>(2) << std::endl;
+    //std::cout << "EulerAngles X:" << EulerAngles[0] << " Y:" << EulerAngles[1] << " Z:"<< EulerAngles[2] << std::endl;
             
             auto table = ntinst.GetTable("WarVision");
-            std::cout << "test 1";
-    		table->PutNumber("botposeX", tVec.at<double>(0));
-    		table->PutNumber("botposeY", tVec.at<double>(1));
-    		table->PutNumber("botposeZ", tVec.at<double>(2));
-            std::cout << "test 2";
+            table->PutNumber("botposeX", tVec.at<double>(0));
+    	    table->PutNumber("botposeY", tVec.at<double>(1));
+    	    table->PutNumber("botposeZ", tVec.at<double>(2));
             table->PutNumber("EulerAngleX", EulerAngles[0]);
-    		table->PutNumber("EulerAngleY", EulerAngles[1]);
-    		table->PutNumber("EulerAngleZ", EulerAngles[2]);
-            std::cout << "test 3";
+    	    table->PutNumber("EulerAngleY", EulerAngles[1]);
+    	    table->PutNumber("EulerAngleZ", EulerAngles[2]);
     }
 
     // print radians between multiple tags
@@ -286,6 +283,9 @@ process_image(void *p, double fps) {
     	if(num_detections > 0) {
 		// print solvePnP white dot
 		cv::circle(fieldMat, cv::Point(tVec.at<double>(0) * 100, fieldHeight - tVec.at<double>(1) * 100), 10, cv::Scalar(255,255,255), 20);
+
+    		cv::line(fieldMat, cv::Point(tVec.at<double>(0) * 100, fieldHeight - tVec.at<double>(1) * 100), cv::Point((tVec.at<double>(0)-sin(EulerAngles[2])) * 100, fieldHeight - (tVec.at<double>(1)+cos(EulerAngles[2])) * 100), cv::Scalar(255, 255, 255), 5);
+	
         	cv::putText(fieldMat, std::to_string(num_detections), cv::Point(tVec.at<double>(0) * 100 - 10, fieldHeight - tVec.at<double>(1) * 100 + 10), cv::FONT_HERSHEY_DUPLEX, 1, cv::Scalar(0,0,0), 2, false);
 	}
 
