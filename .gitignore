@@ -6,3 +6,4 @@ captureusb
 calibrate
 *.ppm
 calibrate
+build/*
