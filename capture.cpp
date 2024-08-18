@@ -37,13 +37,13 @@
 
 #define OV9281_MIN_GAIN 0x0000
 #define OV9281_MAX_GAIN 0x00FE
-#define OV9281_DEFAULT_GAIN 0x0010 /* 1.0x real gain */
+//#define OV9281_DEFAULT_GAIN 0x0010 /* 1.0x real gain */
+#define OV9281_DEFAULT_GAIN 180
 
 #define OV9281_MIN_EXPOSURE_COARSE 0x00000010
 #define OV9281_MAX_EXPOSURE_COARSE 0x00003750
-#define OV9281_DEFAULT_EXPOSURE_COARSE 0x00002A90
-
-#define MAX_TAG_ID 8
+//#define OV9281_DEFAULT_EXPOSURE_COARSE 0x00002A90
+#define OV9281_DEFAULT_EXPOSURE_COARSE 3847
 
 #define CLEAR(x) memset(&(x), 0, sizeof(x))
 #define ARRAY_SIZE(a) (sizeof(a) / sizeof((a)[0]))
@@ -70,8 +70,12 @@ cuAprilTagsHandle april_tags_handle = nullptr;
 
 // Camera intrinsics
 // Innovision OV9281rawv2
+// theoretical
+//cuAprilTagsCameraIntrinsics_t cam_intrinsics =
+//    {1082., 1082., 1280.0 / 2.0, 800.0 / 2.0};
+//    random camera from Cole
 cuAprilTagsCameraIntrinsics_t cam_intrinsics =
-    {1082., 1082., 1280.0 / 2.0, 800.0 / 2.0};
+    {975.313802, 973.643651, 653.72789, 394.844602};
 
 cv::Mat intrinsicMat(3, 3, cv::DataType<double>::type);
 const std::vector<cv::Point3d> objectPoints = {
@@ -87,7 +91,9 @@ const std::vector<cv::Point3d> objectPoints = {
     cv::Point3d(.1, 0, 0),
     cv::Point3d(0, .1, 0),
     cv::Point3d(0, 0, -.1)};
- cv::Mat distCoeffs = (cv::Mat_<double>(5, 1) << -0.4647801828154495, 0.2844034418347612, -0.008834734456932225, -0.01218903939069973, -0.1319188405435461);
+// cv::Mat distCoeffs = (cv::Mat_<double>(5, 1) << -0.4647801828154495, 0.2844034418347612, -0.008834734456932225, -0.01218903939069973, -0.1319188405435461);
+// from Cole random camera
+cv::Mat distCoeffs = (cv::Mat_<double>(5, 1) << -0.307453, 0.106324, -0.004022, -0.006423, 0.0);
 //cv::Mat distCoeffs = (cv::Mat_<double>(5, 1) << 0.0, 0.0, 0.0, 0.0, 0.0);
 
 // Output vector of detected Tags
@@ -103,7 +109,16 @@ const int tile_size = 24;
 
 cuAprilTagsImageInput_t input_image;
 
+#ifndef DEVICE
+#define DEVICE 0
+#endif
+
+#if DEVICE == 1
+static const char *dev_name = "/dev/video1";
+#else
 static const char *dev_name = "/dev/video0";
+#endif
+
 static int fd = -1;
 struct buffer *buffers = NULL;
 static unsigned int n_buffers = 0;
@@ -122,8 +137,13 @@ auto ntinst = nt::NetworkTableInstance::GetDefault();
 
 cs::CvSource cvsource{"cvsource", cs::VideoMode::kMJPEG, (int)width/csDecimate, (int)height/csDecimate, 8};
 cs::CvSource cvsource2{"cvsource2", cs::VideoMode::kMJPEG, (int)fieldHeight/csDecimate, (int)fieldWidth/csDecimate, 8};
+#if DEVICE == 1
+cs::MjpegServer cvMjpegServer{dev_name, 1183};
+cs::MjpegServer cvMjpegServer2{"field", 1184};
+#else
 cs::MjpegServer cvMjpegServer{dev_name, 1181};
 cs::MjpegServer cvMjpegServer2{"field", 1182};
+#endif
 
 frc::AprilTagFieldLayout fieldlayout;
 
@@ -159,6 +179,23 @@ xioctl(int fd,
     return r;
 }
 
+// 0 == Pitch 1 == Roll 2 == Yaw 
+cv::Vec3f rotationMatrixToEulerAngles(cv::Mat &R) {
+    //assert(isRotationMatrix(R));
+    float sy = sqrt(R.at<double>(0,0) * R.at<double>(0,0) + R.at<double> (1,0) * R.at<double> (1,0));
+    bool singular = sy < 1e-6;
+    float x, y, z;
+    if (!singular) {
+        x = atan2(R.at<double>(2,1), R.at<double>(2,2));
+        y = atan2(-R.at<double>(2,0), sy);
+        z = atan2(R.at<double>(1,0), R.at<double>(0,0));
+    } else {
+        x = atan2(-R.at<double>(1,2), R.at<double>(1,1));
+        y = atan2(-R.at<double>(2,0), sy);
+        z = 0;
+    }
+    return cv::Vec3f(x, y, z);
+}
 
 static void
 process_image(void *p, double fps) {
@@ -188,11 +225,10 @@ process_image(void *p, double fps) {
   cv::Mat rVec(3, 1, cv::DataType<double>::type, 0.0);
   cv::Mat tVec(3, 1, cv::DataType<double>::type, 0.0);
   cv::Mat R;
+  cv::Vec3f EulerAngles;
 
     for (uint32_t i = 0; i < num_detections; i++) {
         const cuAprilTagsID_t &detection = tags[i];
-        //if (detection.id > MAX_TAG_ID)
-        //    continue;
 	
 	auto tagPose =  fieldlayout.GetTagPose(detection.id).value_or(frc::Pose3d());
 
@@ -202,16 +238,33 @@ process_image(void *p, double fps) {
 		objectPoints.push_back(cv::Point3d(corner.X().value(), corner.Y().value(), corner.Z().value()));
 	    }
     }
-    if(num_detections > 0) {
-	    cv::solvePnP(objectPoints, imagePoints, intrinsicMat, distCoeffs, rVec, tVec, false, cv::SOLVEPNP_SQPNP);
 
-	   // std::cout << "tVec " << tVec << std::endl;
-	   // std::cout << "rVec " << rVec << std::endl;
+#if DEVICE == 1
+    auto table = ntinst.GetTable("WarVision1");
+#else
+    auto table = ntinst.GetTable("WarVision");
+#endif
+
+    table->PutNumber("numdetections", num_detections);
+    if(num_detections > 0) {
+	cv::solvePnP(objectPoints, imagePoints, intrinsicMat, distCoeffs, rVec, tVec, false, cv::SOLVEPNP_SQPNP);
+
+  	// std::cout << "tVec " << tVec << std::endl;
+	// std::cout << "rVec " << rVec << std::endl;
 	// inverse the projections from world to camera
 	cv::Rodrigues(rVec, R);
 	R = R.t();
 	tVec = -R * tVec;
-	std::cout << "camera position X:" << tVec.at<double>(0) << " Y:" << tVec.at<double>(1) << " Z:" << tVec.at<double>(2) << std::endl;
+        EulerAngles = rotationMatrixToEulerAngles(R);
+	//std::cout << "camera position X:" << tVec.at<double>(0) << " Y:" << tVec.at<double>(1) << " Z:" << tVec.at<double>(2) << std::endl;
+        //std::cout << "EulerAngles X:" << EulerAngles[0] << " Y:" << EulerAngles[1] << " Z:"<< EulerAngles[2] << std::endl;
+            
+        table->PutNumber("botposeX", tVec.at<double>(0));
+        table->PutNumber("botposeY", tVec.at<double>(1));
+        table->PutNumber("botposeZ", tVec.at<double>(2));
+        table->PutNumber("EulerAngleX", EulerAngles[0]);
+        table->PutNumber("EulerAngleY", EulerAngles[1]);
+    	table->PutNumber("EulerAngleZ", EulerAngles[2]);
     }
 
     // print radians between multiple tags
@@ -223,16 +276,13 @@ process_image(void *p, double fps) {
         } 
     */
 
-
-    // output to cameraserver every 8 frames
-    if (count % 8 == 0) {
+    // output to cameraserver every 10 frames
+    if (count % 10 == 0) {
         cv::Mat mat(height, width, CV_8UC3, cuda_out_buffer);
         cv::Mat fieldMat = fieldMatEmpty.clone();
 
         for (uint32_t i = 0; i < num_detections; i++) {
             const cuAprilTagsID_t &detection = tags[i];
-            //if (detection.id > MAX_TAG_ID)
-            //    continue;
 
             float roll, pitch, yaw;
             matrixToRPY(detection.orientation, pitch, yaw, roll);
@@ -256,6 +306,9 @@ process_image(void *p, double fps) {
     	if(num_detections > 0) {
 		// print solvePnP white dot
 		cv::circle(fieldMat, cv::Point(tVec.at<double>(0) * 100, fieldHeight - tVec.at<double>(1) * 100), 10, cv::Scalar(255,255,255), 20);
+
+    		cv::line(fieldMat, cv::Point(tVec.at<double>(0) * 100, fieldHeight - tVec.at<double>(1) * 100), cv::Point((tVec.at<double>(0)-sin(EulerAngles[2])) * 100, fieldHeight - (tVec.at<double>(1)+cos(EulerAngles[2])) * 100), cv::Scalar(255, 255, 255), 5);
+	
         	cv::putText(fieldMat, std::to_string(num_detections), cv::Point(tVec.at<double>(0) * 100 - 10, fieldHeight - tVec.at<double>(1) * 100 + 10), cv::FONT_HERSHEY_DUPLEX, 1, cv::Scalar(0,0,0), 2, false);
 	}
 
@@ -866,8 +919,13 @@ init_wpilib(void) {
     std::cout << "Setting up NetworkTables client for team " << team << std::endl;
     ntinst.StartClient4("ov9281");
     ntinst.SetServerTeam(team);
+
     auto table = ntinst.GetTable("CameraPublisher");
+#if DEVICE == 1
+    std::string mjpgstream[] = {"http://10.41.43.48:1183/stream.mjpg"};
+#else
     std::string mjpgstream[] = {"http://10.41.43.48:1181/stream.mjpg"};
+#endif
     table->PutStringArray("Jetson/streams", std::span{mjpgstream});
 
     cvMjpegServer.SetSource(cvsource);
