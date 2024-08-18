@@ -21,6 +21,7 @@
  */
 
 #include <cuda_runtime.h>
+#include <stdio.h>
 #include "yuv2rgb.cuh"
 
 __device__ inline float clamp(float val, float mn, float mx)
@@ -53,7 +54,7 @@ __global__ void gpuConvertYUYVtoRGB_kernel(unsigned char *src, unsigned char *ds
 }
 
 void gpuConvertYUYVtoRGB(unsigned char *src, unsigned char *dst,
-		unsigned int width, unsigned int height)
+		unsigned int width, unsigned int height, cudaStream_t stream)
 {
 	unsigned char *d_src = NULL;
 	unsigned char *d_dst = NULL;
@@ -65,29 +66,29 @@ void gpuConvertYUYVtoRGB(unsigned char *src, unsigned char *dst,
 
 	if (srcIsMapped) {
 		d_src = src;
-		cudaStreamAttachMemAsync(NULL, src, 0, cudaMemAttachGlobal);
+		//cudaStreamAttachMemAsync(stream, src, 0, cudaMemAttachGlobal);
 	} else {
 		cudaMalloc(&d_src, planeSize * 2);
 		cudaMemcpy(d_src, src, planeSize * 2, cudaMemcpyHostToDevice);
 	}
 	if (dstIsMapped) {
 		d_dst = dst;
-		cudaStreamAttachMemAsync(NULL, dst, 0, cudaMemAttachGlobal);
+		//cudaStreamAttachMemAsync(stream, dst, 0, cudaMemAttachGlobal);
 	} else {
 		cudaMalloc(&d_dst, planeSize * 3);
 	}
 
 	unsigned int blockSize = 1024;
 	unsigned int numBlocks = (width / 2 + blockSize - 1) / blockSize;
-	gpuConvertYUYVtoRGB_kernel<<<numBlocks, blockSize>>>(d_src, d_dst, width, height);
-	cudaStreamAttachMemAsync(NULL, dst, 0, cudaMemAttachHost);
-	cudaStreamSynchronize(NULL);
+	gpuConvertYUYVtoRGB_kernel<<<numBlocks, blockSize, 0, stream>>>(d_src, d_dst, width, height);
+	//cudaStreamAttachMemAsync(stream, dst, 0, cudaMemAttachHost);
+	//cudaStreamSynchronize(stream);
 
 	if (!srcIsMapped) {
-		cudaMemcpy(dst, d_dst, planeSize * 3, cudaMemcpyDeviceToHost);
 		cudaFree(d_src);
 	}
 	if (!dstIsMapped) {
+		cudaMemcpy(dst, d_dst, planeSize * 3, cudaMemcpyDeviceToHost);
 		cudaFree(d_dst);
 	}
 }

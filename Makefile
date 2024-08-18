@@ -24,8 +24,10 @@ APP := capture-cuda
 
 SRCS := \
 	capture.cpp \
+	captureusb.cpp \
 	capturestockrpiv2.cpp \
-	raw2rgb.cu
+	raw2rgb.cu \
+        yuv2rgb.cu
 
 ALL_CPPFLAGS := $(addprefix -Xcompiler ,$(filter-out -std=c++20, $(CPPFLAGS)))
 
@@ -38,9 +40,13 @@ GENCODE_SM87_PTX := -gencode arch=compute_87,code=compute_87
 GENCODE_SM_PTX := -gencode arch=compute_72,code=compute_72
 GENCODE_FLAGS := $(GENCODE_SM53) $(GENCODE_SM62) $(GENCODE_SM72) $(GENCODE_SM_PTX) $(GENCODE_SM87_PTX)
 
-all: $(APP) capturestockrpiv2 calibrate
+all: $(APP) captureusb capturestockrpiv2 calibrate
 
 capture.o: capture.cpp
+	@echo "Compiling: $<"
+	$(CPP) $(CPPFLAGS) -c $<
+
+captureusb.o: captureusb.cpp
 	@echo "Compiling: $<"
 	$(CPP) $(CPPFLAGS) -c $<
 
@@ -56,11 +62,19 @@ raw2rgb.o: raw2rgb.cu
 	@echo "Compiling: $<"
 	$(NVCC) $(ALL_CPPFLAGS) $(GENCODE_FLAGS) -c $<
 
+yuv2rgb.o: yuv2rgb.cu
+	@echo "Compiling: $<"
+	$(NVCC) $(ALL_CPPFLAGS) $(GENCODE_FLAGS) -c $<
+
 $(APP): capture.o raw2rgb.o
 	@echo "Linking: $@"
 	$(CPP) -o $@ $^ $(CPPFLAGS) $(LDFLAGS) libcuapriltags.a `pkg-config --libs opencv4`
 
 capturestockrpiv2: capturestockrpiv2.o raw2rgb.o
+	@echo "Linking: $@"
+	$(CPP) -o $@ $^ $(CPPFLAGS) $(LDFLAGS) libcuapriltags.a `pkg-config --libs opencv4`
+
+captureusb: captureusb.o yuv2rgb.o
 	@echo "Linking: $@"
 	$(CPP) -o $@ $^ $(CPPFLAGS) $(LDFLAGS) libcuapriltags.a `pkg-config --libs opencv4`
 
