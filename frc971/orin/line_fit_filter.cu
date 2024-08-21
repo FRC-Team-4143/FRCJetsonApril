@@ -217,7 +217,7 @@ class ErrorCalculator {
 
   // Calculates the line fit error centered on the provided blob index in the
   // current extent.
-  __host__ __device__ double CalculateError(ssize_t blob_index,
+  /* __host__ RJS */  __device__ double CalculateError(ssize_t blob_index,
                                             bool print = false) const {
     // Index into the blob list for the current key.
     const size_t i0 = (blob_index + 2 * count_ - ksz_) % count_;
@@ -340,7 +340,7 @@ class ErrorCalculator {
 };
 
 template <size_t kThreads>
-__global__ void DoFitLines(
+  __global__ void DoFitLines(
     const LineFitPoint *line_fit_points_device, size_t points,
     const cub::KeyValuePair<long, MinMaxExtents> *selected_extents_device,
     double *errs_device, double *filtered_errs_device, Peak *peaks_device) {
@@ -402,7 +402,8 @@ __global__ void DoFitLines(
                calculator.global_block_index_end() + kBeforeBuffer) {
       // Now we are solidly in the middle of the block.  Make sure anything
       // computed after the end of the buffer uses the extents of the end.
-      calculator.LoadExtents(std::min<uint32_t>(
+      calculator.LoadExtents(//std::min<uint32_t>(
+      				ullmin(
           calculator.global_block_index_size() - 1, i - kErrorsBuffer));
       size_t target_index = calculator.BlobIndex(i - kErrorsBuffer);
 
@@ -939,7 +940,7 @@ class QuadFitCalculator {
         line_fit_points_device_, selected_extent_.count, index0, index1);
   }
 
-  __host__ __device__ void ComputeM0M1Fit() {
+  /*__host__ RJS */ __device__ void ComputeM0M1Fit() {
     if (extents_.count < 4) {
       return;
     }
@@ -979,7 +980,7 @@ class QuadFitCalculator {
 
   __host__ __device__ int blob_index() const { return extents_.blob_index; }
 
-  __host__ __device__ double FitLines(uint m0, uint m1, uint m2,
+  /*__host__ RJS */  __device__ double FitLines(uint m0, uint m1, uint m2,
                                       uint m3) const {
     const bool print =
 #ifdef DEBUG_BLOB_NUMBER
@@ -1092,7 +1093,7 @@ struct CustomLess {
   }
 };
 
-__global__ void DoFitQuads(
+ __global__ void DoFitQuads(
     const Peak *peaks_device, const PeakExtents *peak_extents,
     const LineFitPoint *line_fit_points_device,
     const cub::KeyValuePair<long, MinMaxExtents> *selected_extents_device,
@@ -1210,8 +1211,8 @@ void FitQuads(
   VLOG(1) << "Spawning with " << kThreads << " threads, and " << kBlocks
           << " blocks for " << num_extents << " blob_ids";
   CHECK_EQ(nmaxima, kNMaxima)
-      << ": Kernel is compiled and optimized for a fixed nmaxima, please "
-         "recompile if you want to change it.";
+      //<< ": Kernel is compiled and optimized for a fixed nmaxima, please "
+      //   "recompile if you want to change it.";
   DoFitQuads<<<kBlocks, kThreads, 0, stream->get()>>>(
       peaks_device, peak_extents, line_fit_points_device,
       selected_extents_device, max_line_fit_mse, cos_critical_rad,

@@ -52,7 +52,6 @@
 #include <opencv2/core.hpp>
 #include <opencv2/imgproc.hpp>
 #include <opencv2/highgui.hpp>
-#include <opencv2/cudafilters.hpp>
 
 #include <opencv2/calib3d.hpp>
 std::vector< std::vector< cv::Point3f > > object_points;

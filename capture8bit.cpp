@@ -59,7 +59,7 @@
 #define APRILTAGS
 #ifdef APRILTAGS
 #include "cuAprilTags.h"
-#include <eigen3/Eigen/Dense>
+//#include <eigen3/Eigen/Dense>
 #endif
 
 //#define CALIB
@@ -245,12 +245,12 @@ process_image (void *           p, double fps)
        std::cout << "," << detection.translation[1];
        std::cout << "," << detection.translation[2] << " ";
 
-       const Eigen::Map<const Eigen::Matrix<float, 3, 3, Eigen::ColMajor>>
-            orientation(detection.orientation);
-       const Eigen::Quaternion<float> q(orientation);
-       std::cout << "quaternion: " << q.w() << " " << q.x() << " " << q.y() << " " << q.z() << std::endl;
-       const Eigen::AngleAxis<float> axis(q);
-       std::cout << "axis: " << axis.axis() << std::endl;
+       //const Eigen::Map<const Eigen::Matrix<float, 3, 3, Eigen::ColMajor>>
+       //     orientation(detection.orientation);
+       //const Eigen::Quaternion<float> q(orientation);
+       //std::cout << "quaternion: " << q.w() << " " << q.x() << " " << q.y() << " " << q.z() << std::endl;
+       //const Eigen::AngleAxis<float> axis(q);
+       //std::cout << "axis: " << axis.axis() << std::endl;
 
     }
     if (num_detections > 0)

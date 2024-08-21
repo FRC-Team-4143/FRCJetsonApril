@@ -12,16 +12,16 @@
 #include <cub/iterator/transform_input_iterator.cuh>
 #include <vector>
 
-#include "absl/flags/flag.h"
-#include "absl/log/check.h"
-#include "absl/log/log.h"
+//#include "absl/flags/flag.h"
+//#include "absl/log/check.h"
+//#include "absl/log/log.h"
 
-#include "aos/time/time.h"
-#include "frc971/orin/apriltag.h"
+//#include "aos/time/time.h"
+#include "frc971/orin/971apriltag.h"
 #include "frc971/orin/labeling_allegretti_2019_BKE.h"
 #include "frc971/orin/threshold.h"
 
-ABSL_FLAG(int32_t, debug_blob_index, 4096, "Blob to print out for");
+//ABSL_FLAG(int32_t, debug_blob_index, 4096, "Blob to print out for");
 
 constexpr int kUndistortIterationThreshold = 100;
 constexpr double kUndistortConvergenceEpsilon = 1e-6;
@@ -103,7 +103,7 @@ void GpuDetector::UpdateFitQuads() {
   quad_corners_host_.resize(0);
   VLOG(1) << "Considering " << fit_quads_host_.size();
   for (const FitQuad &quad : fit_quads_host_) {
-    bool print = quad.blob_index == absl::GetFlag(FLAGS_debug_blob_index);
+    bool print = quad.blob_index == 4096; //absl::GetFlag(FLAGS_debug_blob_index);
     if (!quad.valid) {
       continue;
     }
@@ -389,14 +389,16 @@ bool GpuDetector::UnDistort(double *u, double *v,
            std::abs(yP - prev_y) > kUndistortConvergenceEpsilon);
 
   if (iterations < kUndistortIterationThreshold) {
-    VLOG(1) << "Took " << iterations << " iterations to reach convergence.";
+    //VLOG(1) << "Took " << iterations << " iterations to reach convergence.";
   } else {
+	  /*
     VLOG(1) << "Took " << iterations
             << " iterations and didn't reach convergence with "
             << " (xP, yP): "
             << " (" << xP << ", " << yP << ")"
             << " vs. (prev_x, prev_y): "
             << " (" << prev_x << ", " << prev_y << ")";
+	    */
   }
 
   *u = xP * fx + cx;

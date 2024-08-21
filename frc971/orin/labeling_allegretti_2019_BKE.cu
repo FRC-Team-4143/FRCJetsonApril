@@ -19,8 +19,12 @@
 
 #include "frc971/orin/labeling_allegretti_2019_BKE.h"
 
-#include "absl/log/check.h"
-#include "absl/log/log.h"
+//#include "absl/log/check.h"
+//#include "absl/log/log.h"
+
+#include <cassert>
+#define CHECK_EQ(x,y) { assert(x == y); }
+#define CHECK_NE(x,y) { assert(x != y); }
 
 #include "cuda_runtime.h"
 #include "device_launch_parameters.h"

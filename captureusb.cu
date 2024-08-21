@@ -55,14 +55,13 @@
 #include <opencv2/core.hpp>
 #include <opencv2/imgproc.hpp>
 #include <opencv2/highgui.hpp>
-#include <opencv2/cudafilters.hpp>
 #include <opencv2/core/utility.hpp>
 #endif
 
 #define APRILTAGS
 #ifdef APRILTAGS
 #include "cuAprilTags.h"
-#include <eigen3/Eigen/Dense>
+//#include <eigen3/Eigen/Dense>
 
 // Handle used to interface with the stereo library.
 cuAprilTagsHandle april_tags_handle = nullptr;
@@ -83,6 +82,8 @@ cuAprilTagsImageInput_t input_image;
 
 // Size of image buffer
 size_t input_image_buffer_size = 0;
+
+
 
 #endif
 
@@ -117,6 +118,11 @@ static bool             cuda_zero_copy = true;
 static const char *     file_name       = "out.ppm";
 static unsigned int     pixel_format    = V4L2_PIX_FMT_YUYV;
 static unsigned int     field           = V4L2_FIELD_NONE;
+
+
+// TODO fix this garbage
+#include "frc971/orin/main.cu"
+
 
 static void
 errno_exit                      (const char *           s)
@@ -166,7 +172,7 @@ process_image                   (void *           p, double fps)
       april_tags_handle, &input_image, tags.data(),
       &num_detections, max_tags, main_stream);
     //cudaStreamAttachMemAsync(main_stream, input_image.dev_ptr, 0, cudaMemAttachHost);
-    //cudaStreamSynchronize(main_stream);
+    cudaStreamSynchronize(main_stream);
 
     if(error != 0) {
             std::cout << "april tag detect error" << std::endl;
@@ -182,12 +188,13 @@ process_image                   (void *           p, double fps)
        std::cout << "," << detection.translation[1];
        std::cout << "," << detection.translation[2] << " ";
 
-       const Eigen::Map<const Eigen::Matrix<float, 3, 3, Eigen::ColMajor>>
+       /*const Eigen::Map<const Eigen::Matrix<float, 3, 3, Eigen::ColMajor>>
             orientation(detection.orientation);
        const Eigen::Quaternion<float> q(orientation);
        std::cout << "quaternion: " << q.w() << " " << q.x() << " " << q.y() << " " << q.z() << std::endl;
        const Eigen::AngleAxis<float> axis(q);
        std::cout << "axis: " << axis.axis() << std::endl;
+       */
 
     }
     if (num_detections > 0)
@@ -198,6 +205,19 @@ process_image                   (void *           p, double fps)
     if(count % 1 == 0) {
         std::string str = "fps: " + std::to_string(fps);
         if(true) {
+
+		// 971 library currently expects NV16 format
+		// which is YUV I think 
+		// converts to greyscale by taking 1st of 2 bytes per pixel
+		// this works with original usb cam image so send it that RJS
+    		cv::Mat mat971(height, width, CV_16UC1, p);
+
+		// TODO we should only create this once
+		frc971::apriltag::testing::CudaAprilTagDetector cuda_detector(width, height, tag36h11_create());
+                cuda_detector.DetectGPU(mat971);
+
+		std::cout << "971 num quads " << cuda_detector.num_quads_;
+
     		cv::Mat mat(height, width, CV_8UC3, cuda_out_buffer);
                 cv::cvtColor(mat, mat, cv::COLOR_RGB2BGR);
 #ifdef APRILTAGS
@@ -217,6 +237,7 @@ process_image                   (void *           p, double fps)
 #endif
                 cv::putText(mat, str, cv::Point(50,50),cv::FONT_HERSHEY_DUPLEX,1,cv::Scalar(0,255,0),2,false);
                 cv::imshow(dev_name, mat);
+		cv::imshow("threshold", cuda_detector.thresholded_cuda_);
         }
         cv::pollKey();
         std::cout << str << std::endl;
@@ -372,45 +393,6 @@ mainloop                        (void)
 
 }
 
-
-
-static void
-oldmainloop                        (void)
-{
-    while (count-- > 0) {
-        for (;;) {
-            fd_set fds;
-            struct timeval tv;
-            int r;
-
-            FD_ZERO (&fds);
-            FD_SET (fd, &fds);
-
-            /* Timeout. */
-            tv.tv_sec = 2;
-            tv.tv_usec = 0;
-
-            r = select (fd + 1, &fds, NULL, NULL, &tv);
-
-            if (-1 == r) {
-                if (EINTR == errno)
-                    continue;
-
-                errno_exit ("select");
-            }
-
-            if (0 == r) {
-                fprintf (stderr, "select timeout\n");
-                exit (EXIT_FAILURE);
-            }
-
-            if (read_frame (0.0))
-                break;
-
-            /* EAGAIN - continue select loop. */
-        }
-    }
-}
 
 static void
 stop_capturing                  (void)

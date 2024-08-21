@@ -56,31 +56,16 @@
 #include <opencv2/core.hpp>
 #include <opencv2/imgproc.hpp>
 #include <opencv2/highgui.hpp>
-#include <opencv2/cudafilters.hpp>
 #include <opencv2/core/utility.hpp>
 
 #define APRILTAGS
 #ifdef APRILTAGS
 #include "cuAprilTags.h"
-#include <eigen3/Eigen/Dense>
+//#include <eigen3/Eigen/Dense>
 #endif
 
-
-//#define CALIB
-#ifdef CALIB
-#include <opencv2/calib3d.hpp>
-std::vector< std::vector< cv::Point3f > > object_points;
-std::vector< std::vector< cv::Point2f > > image_points;
-std::vector< cv::Point2f > corners;
-
-int board_width = 7;
-int board_height = 5;
-
-cv::Size board_size = cv::Size(board_width, board_height);
-int board_n = board_width * board_height;
-float square_size = 0.028;  // in meters?
 #endif
-#endif
+
 
 #include "raw2rgb.cuh"
 
@@ -91,6 +76,9 @@ struct buffer {
     void *                  start;
     size_t                  length;
 };
+
+// CUDA stream
+cudaStream_t main_stream = {};
 
 #ifdef APRILTAGS
 // Handle used to interface with the stereo library.
@@ -103,8 +91,6 @@ cuAprilTagsCameraIntrinsics_t cam_intrinsics =
 // Output vector of detected Tags
 std::vector<cuAprilTagsID_t> tags;
 
-// CUDA stream
-cudaStream_t main_stream = {};
 
 float tag_size = .16;  //same units as camera calib
 int max_tags = 5;
@@ -161,6 +147,7 @@ xioctl                          (int                    fd,
 static void
 process_image (void *           p, double fps)
 {
+	std::cout << "process image start ";
     NppiSize osize;
     osize.width = width;
     osize.height = height;
@@ -171,13 +158,10 @@ process_image (void *           p, double fps)
     orect.height = height;
 
     NppStatus eStatusNPP; 
-    //gpuConvertrawtoRGB ((unsigned short *) p, cuda_out_buffer, width, height);
-    //gpuConvertrawtoRGB ((unsigned char *) p, cuda_out_buffer, width, height);
-    //gpuConvertrawtoRGBA ((unsigned char *) p, cuda_out_buffer, width, height);
-    //gpuConvertgraytoRGBA ((unsigned char *) p, cuda_out_buffer, width, height);
-    //gpuConvertgraytoRGB ((unsigned short *) p, cuda_out_buffer, width, height);
     eStatusNPP = nppiCFAToRGB_16u_C1C3R((Npp16u*) p, width*sizeof(short), osize, orect, (Npp16u*) cuda_out_buffer, width*3*sizeof(short), NPPI_BAYER_RGGB, NPPI_INTER_UNDEFINED);
     if (eStatusNPP != NPP_SUCCESS) std::cout << "NPP_CHECK_NPP - eStatusNPP = " << _cudaGetErrorEnum(eStatusNPP) << "("<< eStatusNPP << ")" << std::endl;
+    cudaDeviceSynchronize();
+    std::cout << "nppi done ";
 
     /* Save image. */
     /*
@@ -191,69 +175,26 @@ process_image (void *           p, double fps)
     */
 
 #ifdef opencv
-    //cv::cuda::GpuMat d_mat(height / 2, width / 2, CV_8UC3, cuda_out_buffer);
-    cv::cuda::GpuMat d_16mat(height, width, CV_16UC3, cuda_out_buffer);
-    cv::cuda::GpuMat d_mat;
-    d_16mat.convertTo(d_mat, CV_8UC3, 1/64.0);
+    // TODO: move this back to gpu - dont want to compile opencv w/ cuda
+    cudaStreamAttachMemAsync(main_stream, cuda_out_buffer, 0, cudaMemAttachHost);
+    cv::Mat mat16(height, width, CV_16UC3, cuda_out_buffer);
+    cudaStreamSynchronize(main_stream);
+    cv::Mat mat;
+    mat16.convertTo(mat, CV_8UC3, 1/64.0);
+    memcpy(cuda_out_buffer, mat.data, width * height * 3);
 
-#ifdef CALIB
-    cv::Mat gray;
-    if(count % 10 == 0) {
-            //cv::Mat mat(height  / 2, width / 2, CV_8UC3, cuda_out_buffer);
-            cv::Mat mat(height, width, CV_16UC3, cuda_out_buffer);
-	    cv::cvtColor(mat, gray, cv::COLOR_BGRA2GRAY);
-
-	    bool found = false;
-	    found = cv::findChessboardCorners(mat, board_size, corners,
-					      cv::CALIB_CB_ADAPTIVE_THRESH | cv::CALIB_CB_FILTER_QUADS);
-	    if (found)
-	    {
-	      cv::cornerSubPix(gray, corners, cv::Size(5, 5), cv::Size(-1, -1),
-			   cv::TermCriteria(cv::TermCriteria::EPS | cv::TermCriteria::MAX_ITER, 30, 0.1));
-	      cv::drawChessboardCorners(gray, board_size, corners, found);
-
-	      std::vector< cv::Point3f > obj;
-	      for (int i = 0; i < board_height; i++)
-		for (int j = 0; j < board_width; j++)
-		  obj.push_back(cv::Point3f((float)j * square_size, (float)i * square_size, 0));
-
-	      std::cout << count << ". Found corners!" << std::endl;
-	      image_points.push_back(corners);
-	      object_points.push_back(obj);
-	    }
-	    else std::cout << count << ". no corners found" << std::endl;
-	    cv::imshow("chessboard", gray);
-    }
-    if(count == 1000) {
-	  std::cout << "Starting Calibration" << std::endl;
-	  cv::Mat K;
-	  cv::Mat D;
-	  std::vector< cv::Mat > rvecs, tvecs;
-	  int flag = 0;
-	  flag |= cv::CALIB_FIX_K4;
-	  flag |= cv::CALIB_FIX_K5;
-	  cv::calibrateCamera(object_points, image_points, gray.size(), K, D, rvecs, tvecs, flag);
-	  std::cout << "K" << K << std::endl;
-          std::cout << "D" << D << std::endl;
-  	  std::cout << "board_width" << board_width << std::endl;
-      	  std::cout << "board_height" << board_height << std::endl;
-  	  std::cout << "square_size" << square_size << std::endl;
-	  std::cout << "Done Calibration" << std::endl << std::endl;
-    }
-#endif
+    cudaStreamAttachMemAsync(main_stream, cuda_out_buffer, 0, cudaMemAttachGlobal);
 
 #ifdef APRILTAGS
     uint32_t num_detections;
-    //input_image.dev_ptr = (uchar3*)cuda_out_buffer;
-    input_image.dev_ptr = (uchar3*) d_mat.data;
-    //input_image.pitch = d_mat.step;
+    input_image.dev_ptr = (uchar3*)cuda_out_buffer;
     input_image.pitch = width*3;
     std::cout << input_image.pitch << std::endl;
-    cudaStreamAttachMemAsync(main_stream, input_image.dev_ptr, 0, cudaMemAttachGlobal);
+    //cudaStreamAttachMemAsync(main_stream, input_image.dev_ptr, 0, cudaMemAttachGlobal);
     const int error = cuAprilTagsDetect(
-      april_tags_handle, &input_image, tags.data(),
-      &num_detections, max_tags, main_stream);
-    cudaStreamAttachMemAsync(main_stream, input_image.dev_ptr, 0, cudaMemAttachHost);
+       april_tags_handle, &input_image, tags.data(),
+       &num_detections, max_tags, main_stream);
+    //cudaStreamAttachMemAsync(main_stream, input_image.dev_ptr, 0, cudaMemAttachHost);
     cudaStreamSynchronize(main_stream);
 
     if(error != 0) {
@@ -270,12 +211,12 @@ process_image (void *           p, double fps)
        std::cout << "," << detection.translation[1];
        std::cout << "," << detection.translation[2] << " ";
 
-       const Eigen::Map<const Eigen::Matrix<float, 3, 3, Eigen::ColMajor>>
-            orientation(detection.orientation);
-       const Eigen::Quaternion<float> q(orientation);
-       std::cout << "quaternion: " << q.w() << " " << q.x() << " " << q.y() << " " << q.z() << std::endl;
-       const Eigen::AngleAxis<float> axis(q);
-       std::cout << "axis: " << axis.axis() << std::endl;
+       //const Eigen::Map<const Eigen::Matrix<float, 3, 3, Eigen::ColMajor>>
+       //     orientation(detection.orientation);
+       //const Eigen::Quaternion<float> q(orientation);
+       //std::cout << "quaternion: " << q.w() << " " << q.x() << " " << q.y() << " " << q.z() << std::endl;
+       //const Eigen::AngleAxis<float> axis(q);
+       //std::cout << "axis: " << axis.axis() << std::endl;
 
     }
     if (num_detections > 0)
@@ -286,8 +227,6 @@ process_image (void *           p, double fps)
     if(count % 10 == 0) {
         std::string str = "fps: " + std::to_string(fps);
 	if(true) {
-		cv::Mat mat(d_mat);
-		//cv::Mat mat(height / 2, width / 2, CV_8UC3, cuda_out_buffer);
 		cv::cvtColor(mat, mat, cv::COLOR_RGB2BGR);
 #ifdef APRILTAGS
 		for (uint32_t i = 0; i < num_detections; i++) {
@@ -642,6 +581,8 @@ init_device                     (void)
 
     init_userp (fmt.fmt.pix.sizeimage);
 
+    // Create stream for detection
+    cudaStreamCreate(&main_stream);
 #ifdef APRILTAGS
     const int error = nvCreateAprilTagsDetector(
 //      &april_tags_handle, width/2, height/2, tile_size, cuAprilTagsFamily::NVAT_TAG16H5,
@@ -652,8 +593,6 @@ init_device                     (void)
               "Failed to create NV April Tags detector (error code " +
               std::to_string(error) + ")");
     }
-        // Create stream for detection
-    cudaStreamCreate(&main_stream);
 
     // Allocate the output vector to contain detected AprilTags.
     tags.resize(max_tags);

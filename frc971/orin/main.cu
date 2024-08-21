@@ -2,29 +2,16 @@
 #include <random>
 #include <string>
 
-#include "absl/flags/declare.h"
-#include "absl/flags/flag.h"
-#include "absl/log/check.h"
-#include "absl/log/log.h"
-#include <gtest/gtest.h>
 #include "opencv2/imgproc.hpp"
-//#include "third_party/apriltag/apriltag.h"
-#include "third_party/apriltag/tag16h5.h"
+#include "third_party/apriltag/apriltag.h"
 #include "third_party/apriltag/tag36h11.h"
 #include <opencv2/calib3d.hpp>
 #include <opencv2/highgui.hpp>
 
-#include "aos/time/time.h"
-#include "frc971/orin/apriltag.h"
+//#include "aos/time/time.h"
+#include "frc971/orin/971apriltag.h"
 
-ABSL_FLAG(int32_t, pixel_border, 10,
-          "Size of image border within which to reject detected corners");
-ABSL_FLAG(double, min_decision_margin, 50.0,
-          "Minimum decision margin (confidence) for an apriltag detection");
-
-ABSL_FLAG(bool, debug, false, "If true, write debug images.");
-
-ABSL_DECLARE_FLAG(int32_t, debug_blob_index);
+//ABSL_FLAG(bool, debug, false, "If true, write debug images.");
 
 namespace frc971::apriltag::testing {
 
@@ -37,7 +24,7 @@ apriltag_detector_t *MakeTagDetector(apriltag_family_t *tag_family) {
   tag_detector->nthreads = 6;
   tag_detector->wp = workerpool_create(tag_detector->nthreads);
   tag_detector->qtp.min_white_black_diff = 5;
-  tag_detector->debug = absl::GetFlag(FLAGS_debug);
+  tag_detector->debug = false; //absl::GetFlag(FLAGS_debug);
 
   return tag_detector;
 }
@@ -61,7 +48,7 @@ DistCoeffs create_distortion_coefficients() {
 class CudaAprilTagDetector {
  public:
   CudaAprilTagDetector(size_t width, size_t height,
-                       apriltag_family_t *tag_family = tag16h5_create())
+                       apriltag_family_t *tag_family = tag36h11_create())
       : tag_family_(tag_family),
 	tag_detector_(MakeTagDetector(tag_family_)),
         gray_cuda_(cv::Size(width, height), CV_8UC1),
@@ -76,6 +63,7 @@ class CudaAprilTagDetector {
       cudaDeviceProp prop;
       CHECK_EQ(cudaGetDeviceProperties(&prop, 0), cudaSuccess);
 
+      /*
       LOG(INFO) << "Device: sm_" << prop.major << prop.minor;
 #define DUMP(x) LOG(INFO) << "" #x ": " << prop.x;
       DUMP(sharedMemPerBlock);
@@ -90,6 +78,8 @@ class CudaAprilTagDetector {
       DUMP(warpSize);
 
 #undef DUMP
+*/
+      SetCameraFourConstants();
     }
 
   }
@@ -121,6 +111,22 @@ class CudaAprilTagDetector {
 
     fit_quads_ = gpu_detector_.FitQuads();
 
+    const zarray_t *detections = gpu_detector_.Detections();
+
+    for (int i = 0; i < zarray_size(detections); ++i) {
+      apriltag_detection_t *gpu_detection;
+
+      zarray_get(detections, i, &gpu_detection);
+      printf(
+              "Found GPU tag number %d hamming %d margin %f  (%f, %f), (%f, "
+              "%f), (%f, %f), (%f, %f)\n",
+              gpu_detection->id,
+              gpu_detection->hamming, gpu_detection->decision_margin,
+              gpu_detection->p[0][0], gpu_detection->p[0][1],
+              gpu_detection->p[1][0], gpu_detection->p[1][1],
+              gpu_detection->p[2][0], gpu_detection->p[2][1],
+              gpu_detection->p[3][0], gpu_detection->p[3][1] );
+    }
   }
 
   // Sets the camera constants for camera 24-04
@@ -131,14 +137,16 @@ class CudaAprilTagDetector {
         DistCoeffs{-0.239969, 0.055889, 0.000086, 0.000099, -0.005468});
   }
 
- private:
-  apriltag_family_t *tag_family_;
-  apriltag_detector_t *tag_detector_;
+  int num_quads_ = -1;
+  std::vector<QuadCorners> fit_quads_;
 
   cv::Mat gray_cuda_;
   cv::Mat decimated_cuda_;
   cv::Mat thresholded_cuda_;
 
+ private:
+  apriltag_family_t *tag_family_;
+  apriltag_detector_t *tag_detector_;
 
   std::vector<uint32_t> quad_length_;
   std::vector<MinMaxExtents> extents_cuda_;
@@ -150,8 +158,6 @@ class CudaAprilTagDetector {
   std::vector<double> errors_device_;
   std::vector<double> filtered_errors_device_;
   std::vector<Peak> peaks_device_;
-  int num_quads_ = 0;
-  std::vector<QuadCorners> fit_quads_;
 
   GpuDetector gpu_detector_;
 
@@ -165,16 +171,6 @@ class CudaAprilTagDetector {
   int min_tag_width_ = 1000000;
 };
 
-int
-main() {
-  cv::Mat color_image(1280,720, CV_8UC3);
-
-  CudaAprilTagDetector cuda_detector(color_image.cols,
-                                     color_image.rows);
-
-  cuda_detector.DetectGPU(color_image.clone());
-  return(0);
 }
 
-}
 

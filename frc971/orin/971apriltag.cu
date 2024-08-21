@@ -1,4 +1,4 @@
-#include "frc971/orin/apriltag.h"
+#include "frc971/orin/971apriltag.h"
 
 #include <thrust/iterator/constant_iterator.h>
 #include <thrust/iterator/transform_iterator.h>
@@ -14,11 +14,12 @@
 #include <cub/iterator/transform_input_iterator.cuh>
 #include <vector>
 
-#include "absl/log/check.h"
-#include "absl/log/log.h"
+//#include "absl/log/check.h"
+//#include "absl/log/log.h"
+
 #include "third_party/apriltag/common/g2d.h"
 
-#include "aos/time/time.h"
+//#include "aos/time/time.h"
 #include "frc971/orin/labeling_allegretti_2019_BKE.h"
 #include "frc971/orin/threshold.h"
 #include "frc971/orin/transform_output_iterator.h"
@@ -666,8 +667,8 @@ struct MergePeakExtents {
 }  // namespace
 
 void GpuDetector::Detect(const uint8_t *image) {
-  const aos::monotonic_clock::time_point start_time =
-      aos::monotonic_clock::now();
+  //const aos::monotonic_clock::time_point start_time =
+  //    aos::monotonic_clock::now();
   start_.Record(&stream_);
   color_image_device_.MemcpyAsyncFrom(image, &stream_);
   after_image_memcpy_to_device_.Record(&stream_);
@@ -1039,14 +1040,14 @@ void GpuDetector::Detect(const uint8_t *image) {
     after_quad_fit_memcpy_.Synchronize();
   }
 
-  const aos::monotonic_clock::time_point before_fit_quads =
-      aos::monotonic_clock::now();
+  //const aos::monotonic_clock::time_point before_fit_quads =
+  //    aos::monotonic_clock::now();
   UpdateFitQuads();
   AdjustPixelCenters();
 
   DecodeTags();
 
-  const aos::monotonic_clock::time_point end_time = aos::monotonic_clock::now();
+  //const aos::monotonic_clock::time_point end_time = aos::monotonic_clock::now();
 
   // TODO(austin): Bring it back to the CPU and see how good we did.
 
@@ -1087,12 +1088,12 @@ void GpuDetector::Detect(const uint8_t *image) {
             << "ms";
     previous_event = &std::get<1>(name_event);
   }
-  VLOG(1) << "  FitQuads " << float_milli(end_time - before_fit_quads).count()
-          << "ms on host";
+  //VLOG(1) << "  FitQuads " << float_milli(end_time - before_fit_quads).count()
+  //        << "ms on host";
 
-  VLOG(1) << "Overall "
-          << float_milli(previous_event->ElapsedTime(start_)).count() << "ms, "
-          << float_milli(end_time - start_time).count() << "ms on host";
+  //VLOG(1) << "Overall "
+  //        << float_milli(previous_event->ElapsedTime(start_)).count() << "ms, "
+  //        << float_milli(end_time - start_time).count() << "ms on host";
   // Average.  Skip the first one as the kernel is warming up and is slower.
   if (!first_) {
     ++execution_count_;
