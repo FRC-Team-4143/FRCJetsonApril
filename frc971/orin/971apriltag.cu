@@ -1053,11 +1053,11 @@ void GpuDetector::Detect(const uint8_t *image) {
 
   // Report out how long things took.
 
-  VLOG(1) << "Found " << num_compressed_union_marker_pair_host << " items";
+  /*VLOG(1) << "Found " << num_compressed_union_marker_pair_host << " items";
   VLOG(1) << "Selected " << num_selected_blobs_host << " right side out points";
   VLOG(1) << "Found compressed runs: " << num_quads_host;
   VLOG(1) << "Peaks " << num_compressed_peaks_host << " peaks";
-  VLOG(1) << "Peak Selected blobs " << num_quad_peaked_quads_host << " quads";
+  VLOG(1) << "Peak Selected blobs " << num_quad_peaked_quads_host << " quads";*/
   CudaEvent *previous_event = &start_;
   for (auto name_event : std::vector<std::tuple<std::string_view, CudaEvent &>>{
            {"Memcpy", after_image_memcpy_to_device_},
@@ -1082,10 +1082,10 @@ void GpuDetector::Detect(const uint8_t *image) {
            {"FitQuads", after_quad_fit_},
        }) {
     std::get<1>(name_event).Synchronize();
-    VLOG(1) << "    " << std::get<0>(name_event) << " "
+    /*VLOG(1) << "    " << std::get<0>(name_event) << " "
             << float_milli(std::get<1>(name_event).ElapsedTime(*previous_event))
                    .count()
-            << "ms";
+            << "ms";*/
     previous_event = &std::get<1>(name_event);
   }
   //VLOG(1) << "  FitQuads " << float_milli(end_time - before_fit_quads).count()
@@ -1098,9 +1098,9 @@ void GpuDetector::Detect(const uint8_t *image) {
   if (!first_) {
     ++execution_count_;
     execution_duration_ += previous_event->ElapsedTime(start_);
-    VLOG(1) << "Average overall "
+    /*VLOG(1) << "Average overall "
             << float_milli(execution_duration_ / execution_count_).count()
-            << "ms";
+            << "ms";*/
   }
 
   first_ = false;

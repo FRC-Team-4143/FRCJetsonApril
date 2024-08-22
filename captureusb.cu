@@ -213,31 +213,38 @@ process_image                   (void *           p, double fps)
     		cv::Mat mat971(height, width, CV_16UC1, p);
 
 		// TODO we should only create this once
-		frc971::apriltag::testing::CudaAprilTagDetector cuda_detector(width, height, tag36h11_create());
+		/*frc971::apriltag::testing::CudaAprilTagDetector cuda_detector(width, height, tag36h11_create());
                 cuda_detector.DetectGPU(mat971);
-
-		std::cout << "971 num quads " << cuda_detector.num_quads_;
-
-    		cv::Mat mat(height, width, CV_8UC3, cuda_out_buffer);
+		std::cout << "971 num quads " << cuda_detector.num_quads_;*/
+		
+ 		frc971::apriltag::GpuDetector gpu_detector_(width, height, frc971::apriltag::testing::MakeTagDetector(tag36h11_create()), frc971::apriltag::testing::create_camera_matrix(),
+                      frc971::apriltag::testing::create_distortion_coefficients());
+                gpu_detector_.Detect(mat971.data);
+                const zarray_t *detections = gpu_detector_.Detections();
+                
+		cv::Mat mat(height, width, CV_8UC3, cuda_out_buffer);
                 cv::cvtColor(mat, mat, cv::COLOR_RGB2BGR);
-#ifdef APRILTAGS
-                for (uint32_t i = 0; i < num_detections; i++) {
-                        const cuAprilTagsID_t & detection = tags[i];
+                
+    		for (int i = 0; i < zarray_size(detections); ++i) {
+      			apriltag_detection_t *gpu_detection;
+
+      			zarray_get(detections, i, &gpu_detection);
+		
 
                         cv::Point tag_points[4];
-                       tag_points[0] = cv::Point( detection.corners[0].x, detection.corners[0].y);
-                       tag_points[1] = cv::Point( detection.corners[1].x, detection.corners[1].y);
-                       tag_points[2] = cv::Point( detection.corners[2].x, detection.corners[2].y);
-                       tag_points[3] = cv::Point( detection.corners[3].x, detection.corners[3].y);
+                       tag_points[0] = cv::Point( gpu_detection->p[0][0], gpu_detection->p[0][1]);
+                       tag_points[1] = cv::Point( gpu_detection->p[1][0], gpu_detection->p[1][1]);
+                       tag_points[2] = cv::Point( gpu_detection->p[2][0], gpu_detection->p[2][1]);
+                       tag_points[3] = cv::Point( gpu_detection->p[3][0], gpu_detection->p[3][1]);
                        cv::line(mat, tag_points[0], tag_points[1], cv::Scalar(255,0,0), 2);
                        cv::line(mat, tag_points[1], tag_points[2], cv::Scalar(255,0,0), 2);
                        cv::line(mat, tag_points[2], tag_points[3], cv::Scalar(255,0,0), 2);
                        cv::line(mat, tag_points[3], tag_points[0], cv::Scalar(255,0,0), 2);
                 }
-#endif
+
                 cv::putText(mat, str, cv::Point(50,50),cv::FONT_HERSHEY_DUPLEX,1,cv::Scalar(0,255,0),2,false);
                 cv::imshow(dev_name, mat);
-		cv::imshow("threshold", cuda_detector.thresholded_cuda_);
+		// cv::imshow("threshold", cuda_detector.thresholded_cuda_);
         }
         cv::pollKey();
         std::cout << str << std::endl;
