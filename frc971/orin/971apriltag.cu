@@ -1,7 +1,7 @@
 #include "frc971/orin/971apriltag.h"
 
-#include <thrust/iterator/constant_iterator.h>
-#include <thrust/iterator/transform_iterator.h>
+//#include <thrust/iterator/constant_iterator.h>
+//#include <thrust/iterator/transform_iterator.h>
 
 #include <cub/device/device_copy.cuh>
 #include <cub/device/device_radix_sort.cuh>
@@ -19,7 +19,6 @@
 
 #include "third_party/apriltag/common/g2d.h"
 
-//#include "aos/time/time.h"
 #include "frc971/orin/labeling_allegretti_2019_BKE.h"
 #include "frc971/orin/threshold.h"
 #include "frc971/orin/transform_output_iterator.h"
@@ -121,7 +120,7 @@ GpuDetector::GpuDetector(size_t width, size_t height,
     : width_(width),
       height_(height),
       tag_detector_(tag_detector),
-      color_image_host_(width * height * 2),
+      //color_image_host_(width * height * 2),
       gray_image_host_(width * height),
       color_image_device_(width * height * 2),
       gray_image_device_(width * height),
@@ -666,15 +665,14 @@ struct MergePeakExtents {
 
 }  // namespace
 
-void GpuDetector::Detect(const uint8_t *image) {
-  //const aos::monotonic_clock::time_point start_time =
-  //    aos::monotonic_clock::now();
+void GpuDetector::DetectColor(const uint8_t *image) {
+  start_time = std::chrono::steady_clock::now();
   start_.Record(&stream_);
   color_image_device_.MemcpyAsyncFrom(image, &stream_);
   after_image_memcpy_to_device_.Record(&stream_);
 
   // Threshold the image.
-  CudaToGreyscaleAndDecimateHalide(
+  CudaToGreyscaleAndDecimate(
       color_image_device_.get(), gray_image_device_.get(),
       decimated_image_device_.get(), unfiltered_minmax_image_device_.get(),
       minmax_image_device_.get(), thresholded_image_device_.get(), width_,
@@ -685,6 +683,33 @@ void GpuDetector::Detect(const uint8_t *image) {
 
   after_memcpy_gray_.Record(&stream_);
 
+  DetectGray2(gray_image_host_.get());
+}
+
+void GpuDetector::DetectGray(uint8_t *image) {
+  start_time = std::chrono::steady_clock::now();
+  start_.Record(&stream_);
+  // Threshold the image.
+
+  after_image_memcpy_to_device_.Record(&stream_);
+
+  cudaStreamAttachMemAsync(stream_.get(), image, 0, cudaMemAttachGlobal);
+  CudaDecimate(
+      image,
+      decimated_image_device_.get(), unfiltered_minmax_image_device_.get(),
+      minmax_image_device_.get(), thresholded_image_device_.get(), width_,
+      height_, tag_detector_->qtp.min_white_black_diff, &stream_);
+  after_threshold_.Record(&stream_);
+
+  cudaStreamAttachMemAsync(stream_.get(), image, 0, cudaMemAttachHost);
+
+  after_memcpy_gray_.Record(&stream_);
+
+  DetectGray2(image);
+}
+
+
+void GpuDetector::DetectGray2(uint8_t *image) {
   union_markers_size_device_.MemsetAsync(0u, &stream_);
   after_memset_.Record(&stream_);
 
@@ -1040,14 +1065,15 @@ void GpuDetector::Detect(const uint8_t *image) {
     after_quad_fit_memcpy_.Synchronize();
   }
 
-  //const aos::monotonic_clock::time_point before_fit_quads =
-  //    aos::monotonic_clock::now();
+  const std::chrono::steady_clock::time_point before_fit_quads =
+      std::chrono::steady_clock::now();
   UpdateFitQuads();
   AdjustPixelCenters();
 
-  DecodeTags();
+  DecodeTags(image);
 
-  //const aos::monotonic_clock::time_point end_time = aos::monotonic_clock::now();
+  const std::chrono::steady_clock::time_point end_time =
+      std::chrono::steady_clock::now();
 
   // TODO(austin): Bring it back to the CPU and see how good we did.
 
@@ -1080,27 +1106,28 @@ void GpuDetector::Detect(const uint8_t *image) {
            {"Peak Extents", after_filtered_peak_reduce_},
            {"Memcpy num Extents", after_filtered_peak_host_memcpy_},
            {"FitQuads", after_quad_fit_},
+           {"Memcpy FitQuads", after_quad_fit_memcpy_},
        }) {
     std::get<1>(name_event).Synchronize();
-    /*VLOG(1) << "    " << std::get<0>(name_event) << " "
+    VLOG(1) << "    " << std::get<0>(name_event) << " "
             << float_milli(std::get<1>(name_event).ElapsedTime(*previous_event))
                    .count()
-            << "ms";*/
+            << "ms" << std::endl;
     previous_event = &std::get<1>(name_event);
   }
-  //VLOG(1) << "  FitQuads " << float_milli(end_time - before_fit_quads).count()
-  //        << "ms on host";
+  VLOG(1) << "  FitQuads " << float_milli(end_time - before_fit_quads).count()
+          << "ms on host" << std::endl;
 
-  //VLOG(1) << "Overall "
-  //        << float_milli(previous_event->ElapsedTime(start_)).count() << "ms, "
-  //        << float_milli(end_time - start_time).count() << "ms on host";
+  VLOG(1) << "Overall "
+          << float_milli(previous_event->ElapsedTime(start_)).count() << "ms, "
+          << float_milli(end_time - start_time).count() << "ms on host" << std::endl;
   // Average.  Skip the first one as the kernel is warming up and is slower.
   if (!first_) {
     ++execution_count_;
     execution_duration_ += previous_event->ElapsedTime(start_);
-    /*VLOG(1) << "Average overall "
+    VLOG(1) << "Average overall "
             << float_milli(execution_duration_ / execution_count_).count()
-            << "ms";*/
+            << "ms" << std::endl;
   }
 
   first_ = false;

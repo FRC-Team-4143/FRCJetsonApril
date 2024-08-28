@@ -58,8 +58,8 @@
 #include <opencv2/core/utility.hpp>
 #endif
 
-#define APRILTAGS
-#ifdef APRILTAGS
+#undef NVAPRILTAGS
+#ifdef NVAPRILTAGS
 #include "cuAprilTags.h"
 //#include <eigen3/Eigen/Dense>
 
@@ -91,6 +91,7 @@ size_t input_image_buffer_size = 0;
 cudaStream_t main_stream = {};
 
 
+
 #define CLEAR(x) memset (&(x), 0, sizeof (x))
 #define ARRAY_SIZE(a)   (sizeof(a)/sizeof((a)[0]))
 
@@ -105,7 +106,7 @@ struct buffer {
     size_t                  length;
 };
 
-static const char *     dev_name        = "/dev/video0";
+static const char *     dev_name        = "/dev/video2";
 static io_method        io              = IO_METHOD_MMAP;
 static int              fd              = -1;
 struct buffer *         buffers         = NULL;
@@ -120,9 +121,41 @@ static unsigned int     pixel_format    = V4L2_PIX_FMT_YUYV;
 static unsigned int     field           = V4L2_FIELD_NONE;
 
 
-// TODO fix this garbage
-#include "frc971/orin/main.cu"
+#include "frc971/orin/971apriltag.h"
+#include "third_party/apriltag/apriltag.h"
+#include "third_party/apriltag/tag36h11.h"
 
+// TODO(max): Create a function which will take in the calibration data
+frc971::apriltag::CameraMatrix create_camera_matrix() {
+  return frc971::apriltag::CameraMatrix{
+      1,
+      1,
+      1,
+      1,
+  };
+}
+
+frc971::apriltag::DistCoeffs create_distortion_coefficients() {
+  return frc971::apriltag::DistCoeffs{
+      0, 0, 0, 0, 0,
+  };
+}
+
+// Makes a tag detector.
+apriltag_detector_t *MakeTagDetector(apriltag_family_t *tag_family) {
+  apriltag_detector_t *tag_detector = apriltag_detector_create();
+
+  apriltag_detector_add_family_bits(tag_detector, tag_family, 1);
+
+  tag_detector->nthreads = 6;
+  tag_detector->wp = workerpool_create(tag_detector->nthreads);
+  tag_detector->qtp.min_white_black_diff = 5;
+  tag_detector->debug = false;
+
+  return tag_detector;
+}
+
+frc971::apriltag::GpuDetector *gpu_detector_;
 
 static void
 errno_exit                      (const char *           s)
@@ -163,7 +196,7 @@ process_image                   (void *           p, double fps)
 
 #ifdef opencv
 
-#ifdef APRILTAGS
+#ifdef NVAPRILTAGS
     uint32_t num_detections;
     input_image.dev_ptr = (uchar3*)cuda_out_buffer;
     input_image.pitch = width * 3;
@@ -212,15 +245,8 @@ process_image                   (void *           p, double fps)
 		// this works with original usb cam image so send it that RJS
     		cv::Mat mat971(height, width, CV_16UC1, p);
 
-		// TODO we should only create this once
-		/*frc971::apriltag::testing::CudaAprilTagDetector cuda_detector(width, height, tag36h11_create());
-                cuda_detector.DetectGPU(mat971);
-		std::cout << "971 num quads " << cuda_detector.num_quads_;*/
-		
- 		frc971::apriltag::GpuDetector gpu_detector_(width, height, frc971::apriltag::testing::MakeTagDetector(tag36h11_create()), frc971::apriltag::testing::create_camera_matrix(),
-                      frc971::apriltag::testing::create_distortion_coefficients());
-                gpu_detector_.Detect(mat971.data);
-                const zarray_t *detections = gpu_detector_.Detections();
+                gpu_detector_->DetectColor(mat971.data);
+                const zarray_t *detections = gpu_detector_->Detections();
                 
 		cv::Mat mat(height, width, CV_8UC3, cuda_out_buffer);
                 cv::cvtColor(mat, mat, cv::COLOR_RGB2BGR);
@@ -812,6 +838,10 @@ open_device                     (void)
 static void
 init_cuda                       (void)
 {
+	// 971 detector
+    gpu_detector_ = new frc971::apriltag::GpuDetector(width, height, MakeTagDetector(tag36h11_create()), create_camera_matrix(),
+                      create_distortion_coefficients());
+
     /* Check unified memory support. */
     if (cuda_zero_copy) {
         cudaDeviceProp devProp;

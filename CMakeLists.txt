@@ -26,16 +26,18 @@ include_directories( . /usr/local/cuda/include /usr/local/include/cameraserver
 	/usr/local/include/wpimath /usr/local/include/ntcore 
 	/usr/local/include/apriltag )
 
-add_executable( captureusb captureusb.cu yuv2rgb.cu 
-	frc971/orin/971apriltag.cu 
-	frc971/orin/apriltag_detect.cu 
-	frc971/orin/labeling_allegretti_2019_BKE.cu
-	frc971/orin/line_fit_filter.cu
-	frc971/orin/points.cu
-	frc971/orin/threshold.cu
-	frc971/orin/cuda.cc
+add_library( 971apriltag
+	frc971/orin/971apriltag.cu
+        frc971/orin/apriltag_detect.cu
+        frc971/orin/labeling_allegretti_2019_BKE.cu
+        frc971/orin/line_fit_filter.cu
+        frc971/orin/points.cu
+        frc971/orin/threshold.cu
+        frc971/orin/cuda.cc
 	)
-target_link_libraries( captureusb ${OpenCV_LIBS} ${CMAKE_SOURCE_DIR}/libcuapriltags.a ${CMAKE_SOURCE_DIR}/third_party/apriltag/build/libapriltag.a ) 
+
+add_executable( captureusb captureusb.cpp yuv2rgb.cu  )
+target_link_libraries( captureusb 971apriltag ${OpenCV_LIBS} ${CMAKE_SOURCE_DIR}/libcuapriltags.a ${CMAKE_SOURCE_DIR}/third_party/apriltag/build/libapriltag.a ) 
 
 add_executable( capturestockrpiv2 capturestockrpiv2.cpp raw2rgb.cu )
 target_link_libraries( capturestockrpiv2 nppicc ${OpenCV_LIBS} ${CMAKE_SOURCE_DIR}/libcuapriltags.a )
@@ -44,12 +46,22 @@ add_executable( calibrate calibrate.cpp raw2rgb.cu )
 target_link_libraries( calibrate ${OpenCV_LIBS} )
 
 add_executable( capture-cuda capture.cpp raw2rgb.cu )
-target_link_libraries( capture-cuda ${OpenCV_LIBS} ${CMAKE_SOURCE_DIR}/libcuapriltags.a 
-	cscore ntcore apriltag wpimath wpiutil )
+target_link_libraries( capture-cuda 971apriltag ${OpenCV_LIBS} 
+	${CMAKE_SOURCE_DIR}/libcuapriltags.a 
+	cscore ntcore apriltag wpimath wpiutil 
+	${CMAKE_SOURCE_DIR}/third_party/apriltag/build/libapriltag.a )
 
 add_executable( capture-cuda1 capture.cpp raw2rgb.cu )
 target_compile_definitions( capture-cuda1 PUBLIC DEVICE1 )
-target_link_libraries( capture-cuda1 ${OpenCV_LIBS} ${CMAKE_SOURCE_DIR}/libcuapriltags.a 
-	cscore ntcore apriltag wpimath wpiutil )
+target_link_libraries( capture-cuda1 971apriltag ${OpenCV_LIBS} 
+	${CMAKE_SOURCE_DIR}/libcuapriltags.a 
+	cscore ntcore apriltag wpimath wpiutil 
+	${CMAKE_SOURCE_DIR}/third_party/apriltag/build/libapriltag.a )
+
+add_executable( capture-cuda971 capture971.cpp raw2rgb.cu )
+target_link_libraries( capture-cuda971 971apriltag ${OpenCV_LIBS} 
+	${CMAKE_SOURCE_DIR}/libcuapriltags.a 
+	cscore ntcore apriltag wpimath wpiutil 
+	${CMAKE_SOURCE_DIR}/third_party/apriltag/build/libapriltag.a )
 
 #add_subdirectory(third_party/apriltag)

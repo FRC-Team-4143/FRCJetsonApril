@@ -90,7 +90,7 @@ __global__ void gpuConvertgraytoRGBA_kernel(unsigned short *src, unsigned char *
 	for (int i = 0; i < height; i+=2) {
 		unsigned char r  = (src[i*width+idx+0] ) >> 2;
 		unsigned char g0 = (src[i*width+idx+1] ) >> 2;
-		unsigned char g1 = (src[(i+1)*width+idx+0] ) >> 2 ;
+		//unsigned char g1 = (src[(i+1)*width+idx+0] ) >> 2 ;
 		unsigned char b  = (src[(i+1)*width+idx+1] ) >> 2;
 
 		dst[i*width*4+idx*4+0] = b;

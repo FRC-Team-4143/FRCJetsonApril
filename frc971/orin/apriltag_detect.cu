@@ -1,6 +1,9 @@
-#include <thrust/iterator/constant_iterator.h>
-#include <thrust/iterator/transform_iterator.h>
+//#include <thrust/iterator/constant_iterator.h>
+//#include <thrust/iterator/transform_iterator.h>
 
+#include <cstring>
+
+/*
 #include <cub/device/device_copy.cuh>
 #include <cub/device/device_radix_sort.cuh>
 #include <cub/device/device_reduce.cuh>
@@ -10,6 +13,7 @@
 #include <cub/device/device_select.cuh>
 #include <cub/iterator/discard_output_iterator.cuh>
 #include <cub/iterator/transform_input_iterator.cuh>
+*/
 #include <vector>
 
 //#include "absl/flags/flag.h"
@@ -620,7 +624,7 @@ void GpuDetector::QuadDecodeTask(void *_u) {
   }
 }
 
-void GpuDetector::DecodeTags() {
+void GpuDetector::DecodeTags(uint8_t * image) {
   size_t chunksize =
       1 + quad_corners_host_.size() /
               (APRILTAG_TASKS_PER_THREAD_TARGET * tag_detector_->nthreads);
@@ -640,7 +644,8 @@ void GpuDetector::DecodeTags() {
       .width = static_cast<int32_t>(width_),
       .height = static_cast<int32_t>(height_),
       .stride = static_cast<int32_t>(width_),
-      .buf = gray_image_host_.get(),
+      //.buf = gray_image_host_.get(),
+      .buf = image,
   };
 
   int ntasks = 0;

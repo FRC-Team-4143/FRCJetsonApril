@@ -3,13 +3,13 @@
 
 #include <stdint.h>
 
-#include <cub/iterator/transform_input_iterator.cuh>
+//#include <cub/iterator/transform_input_iterator.cuh>
 #include <cuda/std/tuple>
 #include <iomanip>
 #include <ostream>
 
-#include "cuda_runtime.h"
-#include "device_launch_parameters.h"
+#include <cuda_runtime.h>
+#include <device_launch_parameters.h>
 
 namespace frc971::apriltag {
 

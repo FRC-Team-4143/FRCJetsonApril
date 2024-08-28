@@ -26,9 +26,6 @@
 #define CHECK_EQ(x,y) { assert(x == y); }
 #define CHECK_NE(x,y) { assert(x != y); }
 
-#include "cuda_runtime.h"
-#include "device_launch_parameters.h"
-
 #define BLOCK_ROWS 16
 #define BLOCK_COLS 16
 

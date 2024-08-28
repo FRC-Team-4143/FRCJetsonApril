@@ -1,11 +1,13 @@
 #ifndef FRC971_ORIN_LINE_FIT_FILTER_H_
 #define FRC971_ORIN_LINE_FIT_FILTER_H_
 
-#include <cub/iterator/transform_input_iterator.cuh>
-#include <cuda/std/tuple>
 
-#include "cuda_runtime.h"
-#include "device_launch_parameters.h"
+//#include <cub/iterator/transform_input_iterator.cuh>
+#include <cub/util_type.cuh>
+
+#include <cuda/std/tuple>
+#include <cuda_runtime.h>
+#include <device_launch_parameters.h>
 #include "frc971/orin/cuda.h"
 
 namespace frc971::apriltag {
@@ -58,7 +60,7 @@ struct MinMaxExtents {
   }
 };
 
-__align__(16) struct LineFitPoint {
+struct /*__align__(16)*/ LineFitPoint {
   // TODO(austin): How much precision do we actually need?  The less, the
   // faster...  The less memory too, the faster.
   //

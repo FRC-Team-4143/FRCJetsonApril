@@ -251,12 +251,19 @@ process_image(void *p, double fps) {
 		     << std::endl;
 	}
 
+    // output to cameraserver every 10 frames
+    if (count % 10 == 0) {
+
 #ifdef EIGHTBIT
     gpuConvertgraytoRGB((unsigned char *)p, cuda_out_buffer, width, height, main_stream);
 #else
     gpuConvertgraytoRGB((unsigned short *)p, cuda_out_buffer, width, height, main_stream);
 #endif
+    cudaStreamAttachMemAsync(main_stream, cuda_out_buffer, 0, cudaMemAttachHost);
+    cudaStreamSynchronize(main_stream);
 
+#undef NVAPRILTAG
+#ifdef NVAPRILTAG
     uint32_t num_detections;
     input_image.dev_ptr = (uchar3 *)cuda_out_buffer;
     input_image.pitch = width * 3;
@@ -327,9 +334,8 @@ process_image(void *p, double fps) {
 	    }
         } 
     */
+#endif
 
-    // output to cameraserver every 10 frames
-    if (count % 10 == 0) {
         cv::Mat mat(height, width, CV_8UC3, cuda_out_buffer);
         cv::Mat fieldMat = fieldMatEmpty.clone();
 
@@ -339,6 +345,7 @@ process_image(void *p, double fps) {
              drawAprilBoundingBox971(gpu_detection, mat);
 	}
 
+#ifdef NVAPRILTAG
         for (uint32_t i = 0; i < num_detections; i++) {
             const cuAprilTagsID_t &detection = tags[i];
 
@@ -369,6 +376,7 @@ process_image(void *p, double fps) {
 	
         	cv::putText(fieldMat, std::to_string(num_detections), cv::Point(tVec.at<double>(0) * 100 - 10, fieldHeight - tVec.at<double>(1) * 100 + 10), cv::FONT_HERSHEY_DUPLEX, 1, cv::Scalar(0,0,0), 2, false);
 	}
+#endif
 
         std::string str = "fps: " + std::to_string(fps);
         cv::putText(mat, str, cv::Point(50, 50), cv::FONT_HERSHEY_DUPLEX, 1, cv::Scalar(255, 0, 0), 2, false);

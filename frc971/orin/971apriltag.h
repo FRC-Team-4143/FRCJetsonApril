@@ -5,8 +5,8 @@
 
 #include "third_party/apriltag/apriltag.h"
 
-#include "cuda_runtime.h"
-#include "device_launch_parameters.h"
+#include <cuda_runtime.h>
+#include <device_launch_parameters.h>
 #include "frc971/orin/cuda.h"
 #include "frc971/orin/gpu_image.h"
 #include "frc971/orin/line_fit_filter.h"
@@ -87,7 +87,9 @@ class GpuDetector {
   virtual ~GpuDetector();
 
   // Detects april tags in the provided image.
-  void Detect(const uint8_t *image);
+  void DetectColor(const uint8_t *image);
+  void DetectGray(uint8_t *image);
+  void DetectGray2(uint8_t *image);
 
   const std::vector<QuadCorners> &FitQuads() const;
 
@@ -137,10 +139,10 @@ class GpuDetector {
     return extents_device_.Copy(NumQuads());
   }
 
-  std::vector<cub::KeyValuePair<long, MinMaxExtents>> CopySelectedExtents()
-      const {
-    return selected_extents_device_.Copy(NumQuads());
-  }
+  //std::vector<cub::KeyValuePair<long, MinMaxExtents>> CopySelectedExtents()
+  //    const {
+  //  return selected_extents_device_.Copy(NumQuads());
+  //}
 
   int NumSelectedPairs() const { return num_selected_blobs_device_.Copy()[0]; }
 
@@ -203,7 +205,7 @@ class GpuDetector {
 
   void AdjustPixelCenters();
 
-  void DecodeTags();
+  void DecodeTags(uint8_t *image);
 
   static void QuadDecodeTask(void *_u);
 
@@ -226,6 +228,7 @@ class GpuDetector {
       };
     } else {
       LOG(FATAL) << "Unknown image shape";
+      std::abort();
     }
   }
 
@@ -244,6 +247,7 @@ class GpuDetector {
   CudaEvent after_image_memcpy_to_device_;
   CudaEvent after_threshold_;
   CudaEvent after_memcpy_gray_;
+  CudaEvent after_memcpy_decimated_;
   CudaEvent after_memset_;
   CudaEvent after_unionfinding_;
   CudaEvent after_diff_;
@@ -264,7 +268,7 @@ class GpuDetector {
   CudaEvent after_quad_fit_memcpy_;
 
   // TODO(austin): Remove this...
-  HostMemory<uint8_t> color_image_host_;
+  //HostMemory<uint8_t> color_image_host_;
   HostMemory<uint8_t> gray_image_host_;
 
   // Starting color image.
@@ -356,6 +360,7 @@ class GpuDetector {
   zarray_t *poly1_;
 
   zarray_t *detections_ = nullptr;
+  std::chrono::steady_clock::time_point start_time;
 };
 
 }  // namespace frc971::apriltag

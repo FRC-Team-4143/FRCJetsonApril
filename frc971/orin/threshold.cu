@@ -14,12 +14,39 @@ namespace {
 // 1088 -> 2 * 32 * 17
 
 // Writes out the grayscale image and decimated image.
-__global__ void InternalCudaToGreyscaleAndDecimateHalide(
+__global__ void InternalCudaToGreyscaleAndDecimate(
     const uint8_t *color_image, uint8_t *gray_image, uint8_t *decimated_image,
     size_t width, size_t height) {
   size_t i = blockIdx.x * blockDim.x + threadIdx.x;
   while (i < width * height) {
     uint8_t pixel = gray_image[i] = color_image[i * 2];
+
+    const size_t row = i / width;
+    const size_t col = i - width * row;
+
+    // Copy over every other pixel.
+    if (row % 2 == 0 && col % 2 == 0) {
+      size_t decimated_row = row / 2;
+      size_t decimated_col = col / 2;
+      decimated_image[decimated_row * width / 2 + decimated_col] = pixel;
+    }
+    i += blockDim.x * gridDim.x;
+  }
+
+  // TODO(austin): Figure out how to load contiguous memory reasonably
+  // efficiently and max/min over it.
+
+  // TODO(austin): Can we do the threshold here too?  That would be less memory
+  // bandwidth consumed...
+}
+
+// Writes out decimated image.
+__global__ void InternalCudaDecimate(
+    const uint8_t *gray_image, uint8_t *decimated_image,
+    size_t width, size_t height) {
+  size_t i = blockIdx.x * blockDim.x + threadIdx.x;
+  while (i < width * height) {
+    uint8_t pixel = gray_image[i];
 
     const size_t row = i / width;
     const size_t col = i - width * row;
@@ -149,7 +176,7 @@ __global__ void InternalThreshold(const uint8_t *decimated_image,
 
 }  // namespace
 
-void CudaToGreyscaleAndDecimateHalide(
+void CudaToGreyscaleAndDecimate(
     const uint8_t *color_image, uint8_t *gray_image, uint8_t *decimated_image,
     uint8_t *unfiltered_minmax_image, uint8_t *minmax_image,
     uint8_t *thresholded_image, size_t width, size_t height,
@@ -160,9 +187,61 @@ void CudaToGreyscaleAndDecimateHalide(
   {
     // Step one, convert to gray and decimate.
     size_t kBlocks = (width * height + kThreads - 1) / kThreads / 4;
-    InternalCudaToGreyscaleAndDecimateHalide<<<kBlocks, kThreads, 0,
+    InternalCudaToGreyscaleAndDecimate<<<kBlocks, kThreads, 0,
                                                stream->get()>>>(
         color_image, gray_image, decimated_image, width, height);
+    MaybeCheckAndSynchronize();
+  }
+
+  size_t decimated_width = width / 2;
+  size_t decimated_height = height / 2;
+
+  {
+    // Step 2, compute a min/max for each block of 4x4 (16) pixels.
+    dim3 threads(16, 16, 1);
+    dim3 blocks((decimated_width / 4 + 15) / 16,
+                (decimated_height / 4 + 15) / 16, 1);
+
+    InternalBlockMinMax<<<blocks, threads, 0, stream->get()>>>(
+        decimated_image, reinterpret_cast<uchar2 *>(unfiltered_minmax_image),
+        decimated_width / 4, decimated_height / 4);
+    MaybeCheckAndSynchronize();
+
+    // Step 3, Blur those min/max's a further +- 1 block in each direction using
+    // min/max.
+    InternalBlockFilter<<<blocks, threads, 0, stream->get()>>>(
+        reinterpret_cast<uchar2 *>(unfiltered_minmax_image),
+        reinterpret_cast<uchar2 *>(minmax_image), decimated_width / 4,
+        decimated_height / 4);
+    MaybeCheckAndSynchronize();
+  }
+
+  {
+    // Now, write out 127 if the min/max are too close to each other, or 0/255
+    // if the pixels are above or below the average of the min/max.
+    size_t kBlocks = (width * height / 4 + kThreads - 1) / kThreads / 4;
+    InternalThreshold<<<kBlocks, kThreads, 0, stream->get()>>>(
+        decimated_image, reinterpret_cast<uchar2 *>(minmax_image),
+        thresholded_image, decimated_width, decimated_height,
+        min_white_black_diff);
+    MaybeCheckAndSynchronize();
+  }
+}
+
+void CudaDecimate(
+    const uint8_t *gray_image, uint8_t *decimated_image,
+    uint8_t *unfiltered_minmax_image, uint8_t *minmax_image,
+    uint8_t *thresholded_image, size_t width, size_t height,
+    size_t min_white_black_diff, CudaStream *stream) {
+  CHECK((width % 8) == 0);
+  CHECK((height % 8) == 0);
+  constexpr size_t kThreads = 256;
+  {
+    // Step one, convert to gray and decimate.
+    size_t kBlocks = (width * height + kThreads - 1) / kThreads / 4;
+    InternalCudaDecimate<<<kBlocks, kThreads, 0,
+                                               stream->get()>>>(
+        gray_image, decimated_image, width, height);
     MaybeCheckAndSynchronize();
   }
 

@@ -19,8 +19,8 @@
 #define CHECK_LE(x, y) { assert(x <= y); }
 #define CHECK_LT(x, y) { assert(x < y); }
 
-#include "cuda_runtime.h"
-#include "device_launch_parameters.h"
+#include <cuda_runtime.h>
+#include <device_launch_parameters.h>
 
 #include <vector>
 
