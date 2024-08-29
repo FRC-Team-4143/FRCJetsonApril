@@ -1,14 +1,11 @@
-#ifndef FRC971_ORIN_CUDA_H_
-#define FRC971_ORIN_CUDA_H_
+#pragma once
 
 #include <chrono>
 #include <span>
-
-//#include "absl/log/check.h"
-//#include "absl/log/log.h"
-
 #include <iostream>
 #include <cassert>
+#include <vector>
+
 // ABSL replace
 #define FATAL true
 #define INFO true
@@ -22,7 +19,7 @@
 #include <cuda_runtime.h>
 #include <device_launch_parameters.h>
 
-#include <vector>
+
 
 // CHECKs that a cuda method returned success.
 // TODO(austin): This will not handle if and else statements quite right, fix if
@@ -221,4 +218,4 @@ void MaybeCheckAndSynchronize(std::string_view message);
 
 }  // namespace frc971::apriltag
 
-#endif  // FRC971_ORIN_CUDA_H_
+

@@ -14,6 +14,8 @@ endif()
 
 set(CMAKE_CUDA_FLAGS "--expt-relaxed-constexpr")
 
+# set(CMAKE_BUILD_TYPE DEBUG)
+
 project(capture LANGUAGES CXX CUDA)
 find_package(OpenCV REQUIRED)
 find_package(Eigen3 REQUIRED)
@@ -63,5 +65,10 @@ target_link_libraries( capture-cuda971 971apriltag ${OpenCV_LIBS}
 	${CMAKE_SOURCE_DIR}/libcuapriltags.a 
 	cscore ntcore apriltag wpimath wpiutil 
 	${CMAKE_SOURCE_DIR}/third_party/apriltag/build/libapriltag.a )
-
+	
+add_executable( capture-cuda971only capture971only.cpp raw2rgb.cu )
+target_link_libraries( capture-cuda971only 971apriltag ${OpenCV_LIBS} 
+	${CMAKE_SOURCE_DIR}/libcuapriltags.a 
+	cscore ntcore apriltag wpiutil wpimath 
+	${CMAKE_SOURCE_DIR}/third_party/apriltag/build/libapriltag.a )
 #add_subdirectory(third_party/apriltag)

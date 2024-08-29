@@ -1,5 +1,4 @@
-#ifndef FRC971_ORIN_GPU_IMAGE_H_
-#define FRC971_ORIN_GPU_IMAGE_H_
+#pragma once
 
 template <typename T>
 struct GpuImage {
@@ -11,4 +10,4 @@ struct GpuImage {
   size_t step;
 };
 
-#endif  // FRC971_ORIN_GPU_IMAGE_H_
+

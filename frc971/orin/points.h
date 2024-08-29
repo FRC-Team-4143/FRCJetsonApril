@@ -1,9 +1,7 @@
-#ifndef FRC971_ORIN_POINTS_H_
-#define FRC971_ORIN_POINTS_H_
+#pragma once
 
 #include <stdint.h>
 
-//#include <cub/iterator/transform_input_iterator.cuh>
 #include <cuda/std/tuple>
 #include <iomanip>
 #include <ostream>
@@ -298,4 +296,4 @@ struct QuadIndexPointDecomposer {
 
 }  // namespace frc971::apriltag
 
-#endif  // FRC971_ORIN_POINTS_H_
+

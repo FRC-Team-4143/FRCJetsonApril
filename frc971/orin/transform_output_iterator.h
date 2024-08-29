@@ -1,5 +1,4 @@
-#ifndef FRC971_TRANSFORM_OUTPUT_ITERATOR_
-#define FRC971_TRANSFORM_OUTPUT_ITERATOR_
+#pragma once
 
 namespace frc971::apriltag {
 
@@ -87,4 +86,4 @@ class TransformOutputIterator {
 
 }  // namespace frc971::apriltag
 
-#endif  // FRC971_TRANSFORM_OUTPUT_ITERATOR_
+

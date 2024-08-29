@@ -1,5 +1,4 @@
-#ifndef FRC971_ORIN_THRESHOLD_H_
-#define FRC971_ORIN_THRESHOLD_H_
+#pragma once
 
 #include <stdint.h>
 
@@ -25,4 +24,4 @@ void CudaToGreyscaleAndDecimate(
 
 }  // namespace frc971::apriltag
 
-#endif  // FRC971_ORIN_THRESHOLD_H_
+

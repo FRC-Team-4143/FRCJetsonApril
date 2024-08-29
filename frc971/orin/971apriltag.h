@@ -1,7 +1,4 @@
-#ifndef FRC971_ORIN_APRILTAG_H_
-#define FRC971_ORIN_APRILTAG_H_
-
-//#include <cub/iterator/transform_input_iterator.cuh>
+#pragma once
 
 #include "third_party/apriltag/apriltag.h"
 
@@ -365,4 +362,4 @@ class GpuDetector {
 
 }  // namespace frc971::apriltag
 
-#endif  // FRC971_ORIN_APRILTAG_H_
+

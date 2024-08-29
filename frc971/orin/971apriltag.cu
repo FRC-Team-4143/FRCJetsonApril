@@ -1,8 +1,5 @@
 #include "frc971/orin/971apriltag.h"
 
-//#include <thrust/iterator/constant_iterator.h>
-//#include <thrust/iterator/transform_iterator.h>
-
 #include <cub/device/device_copy.cuh>
 #include <cub/device/device_radix_sort.cuh>
 #include <cub/device/device_reduce.cuh>
@@ -13,9 +10,6 @@
 #include <cub/iterator/discard_output_iterator.cuh>
 #include <cub/iterator/transform_input_iterator.cuh>
 #include <vector>
-
-//#include "absl/log/check.h"
-//#include "absl/log/log.h"
 
 #include "third_party/apriltag/common/g2d.h"
 
@@ -1078,59 +1072,6 @@ void GpuDetector::DetectGray2(uint8_t *image) {
   // TODO(austin): Bring it back to the CPU and see how good we did.
 
   // Report out how long things took.
-
-  /*VLOG(1) << "Found " << num_compressed_union_marker_pair_host << " items";
-  VLOG(1) << "Selected " << num_selected_blobs_host << " right side out points";
-  VLOG(1) << "Found compressed runs: " << num_quads_host;
-  VLOG(1) << "Peaks " << num_compressed_peaks_host << " peaks";
-  VLOG(1) << "Peak Selected blobs " << num_quad_peaked_quads_host << " quads";*/
-  CudaEvent *previous_event = &start_;
-  for (auto name_event : std::vector<std::tuple<std::string_view, CudaEvent &>>{
-           {"Memcpy", after_image_memcpy_to_device_},
-           {"Threshold", after_threshold_},
-           {"Memcpy Gray", after_memcpy_gray_},
-           {"Memset", after_memset_},
-           {"Unionfinding", after_unionfinding_},
-           {"Diff", after_diff_},
-           {"Compact", after_compact_},
-           {"Sort", after_sort_},
-           {"Bounds", after_bounds_},
-           {"Transform Extents", after_transform_extents_},
-           {"Filter by dot product", after_filter_},
-           {"Filtered sort", after_filtered_sort_},
-           {"Line Fit", after_line_fit_},
-           {"Error Filter", after_line_filter_},
-           {"Compress Peaks", after_peak_compression_},
-           {"Memcpy Peaks", after_peak_count_memcpy_},
-           {"Sort Peaks", after_peak_sort_},
-           {"Peak Extents", after_filtered_peak_reduce_},
-           {"Memcpy num Extents", after_filtered_peak_host_memcpy_},
-           {"FitQuads", after_quad_fit_},
-           {"Memcpy FitQuads", after_quad_fit_memcpy_},
-       }) {
-    std::get<1>(name_event).Synchronize();
-    VLOG(1) << "    " << std::get<0>(name_event) << " "
-            << float_milli(std::get<1>(name_event).ElapsedTime(*previous_event))
-                   .count()
-            << "ms" << std::endl;
-    previous_event = &std::get<1>(name_event);
-  }
-  VLOG(1) << "  FitQuads " << float_milli(end_time - before_fit_quads).count()
-          << "ms on host" << std::endl;
-
-  VLOG(1) << "Overall "
-          << float_milli(previous_event->ElapsedTime(start_)).count() << "ms, "
-          << float_milli(end_time - start_time).count() << "ms on host" << std::endl;
-  // Average.  Skip the first one as the kernel is warming up and is slower.
-  if (!first_) {
-    ++execution_count_;
-    execution_duration_ += previous_event->ElapsedTime(start_);
-    VLOG(1) << "Average overall "
-            << float_milli(execution_duration_ / execution_count_).count()
-            << "ms" << std::endl;
-  }
-
-  first_ = false;
 }
 
 }  // namespace frc971::apriltag

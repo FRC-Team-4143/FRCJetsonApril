@@ -1,8 +1,5 @@
-#ifndef FRC971_ORIN_LINE_FIT_FILTER_H_
-#define FRC971_ORIN_LINE_FIT_FILTER_H_
+#pragma once
 
-
-//#include <cub/iterator/transform_input_iterator.cuh>
 #include <cub/util_type.cuh>
 
 #include <cuda/std/tuple>
@@ -163,4 +160,4 @@ constexpr size_t MaxRankedIndex() { return 210; }
 
 }  // namespace frc971::apriltag
 
-#endif  // FRC971_ORIN_LINE_FIT_FILTER_H_
+
