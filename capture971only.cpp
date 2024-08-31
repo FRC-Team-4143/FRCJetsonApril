@@ -28,9 +28,6 @@
 #include <opencv2/highgui.hpp>
 #include <opencv2/imgproc.hpp>
 
-#include "cuAprilTags.h"
-// #include <eigen3/Eigen/Dense>
-
 #include "frc/apriltag/AprilTagFieldLayout.h"
 #include "frc/apriltag/AprilTagFields.h"
 #include "raw2rgb.cuh"
@@ -58,26 +55,26 @@ struct buffer {
 const int team = 4143;
 const int csDecimate = 2;
 
+const int cudaDecimate = 2;
+
 // Camera intrinsics
 // Innovision OV9281rawv2
 // theoretical
 //cuAprilTagsCameraIntrinsics_t cam_intrinsics =
 //    {1082., 1082., 1280.0 / 2.0, 800.0 / 2.0};
 //    random camera from Cole
-cuAprilTagsCameraIntrinsics_t cam_intrinsics =
-    {975.313802, 973.643651, 653.72789, 394.844602};
+//cuAprilTagsCameraIntrinsics_t cam_intrinsics =
+//    {975.313802, 973.643651, 653.72789, 394.844602};
 
-cv::Mat intrinsicMat(3, 3, cv::DataType<double>::type);
+//cv::Mat intrinsicMat(3, 3, cv::DataType<double>::type);
 
 // from Cole random camera
-cv::Mat distCoeffs = (cv::Mat_<double>(5, 1) << -0.307453, 0.106324, -0.004022, -0.006423, 0.0);
+//cv::Mat distCoeffs = (cv::Mat_<double>(5, 1) << -0.307453, 0.106324, -0.004022, -0.006423, 0.0);
 
 // CUDA stream
 cudaStream_t main_stream = {};
 
 const float tag_size = .16;  // same units as camera calib
-
-cuAprilTagsImageInput_t input_image;
 
 static const char *dev_name = "/dev/video0";
 static int port_num = 1181;
@@ -90,9 +87,9 @@ static unsigned int height = 720;
 static unsigned int count = 0;
 static unsigned char *cuda_out_buffer = NULL;
 #ifdef EIGHTBIT
-static unsigned int pixel_format = V4L2_PIX_FMT_SRGGB8;
+static unsigned int pixel_format = V4L2_PIX_FMT_GREY;
 #else
-static unsigned int pixel_format = V4L2_PIX_FMT_SRGGB10;
+static unsigned int pixel_format = V4L2_PIX_FMT_Y10;
 #endif
 static unsigned int field = V4L2_FIELD_NONE;
 
@@ -126,6 +123,7 @@ apriltag_detector_t *MakeTagDetector(apriltag_family_t *tag_family) {
   tag_detector->nthreads = 6;
   tag_detector->wp = workerpool_create(tag_detector->nthreads);
   tag_detector->qtp.min_white_black_diff = 5;
+  tag_detector->quad_decimate = cudaDecimate;
   tag_detector->debug = false;
 
   return tag_detector;
@@ -167,12 +165,12 @@ process_image(void *p, double fps) {
         const zarray_t *detections = gpu_detector_->Detections();
 	if( zarray_size(detections))
 	for (int i = 0; i < zarray_size(detections); ++i) {
-	     std::cout << "971 library has " << zarray_size(detections) << " detections" << std::endl;
+	     //std::cout << "971 library has " << zarray_size(detections) << " detections" << std::endl;
              apriltag_detection_t *gpu_detection;
              zarray_get(detections, i, &gpu_detection);
-	     std::cout << "tag: " << gpu_detection->id << " at " <<
-		     gpu_detection->c[0] << "," << gpu_detection->c[1] 
-		     << std::endl;
+	     //std::cout << "tag: " << gpu_detection->id << " at " <<
+	//	     gpu_detection->c[0] << "," << gpu_detection->c[1] 
+	//	     << std::endl;
 	}
 
     // output to cameraserver every 10 frames
@@ -477,7 +475,7 @@ setexposure(int exposure) {
     ext_controls.count = 1;
     ext_controls.controls = &ext_control;
 
-    ext_control.id = 0x009a2001;  // coarse exposure
+    ext_control.id = 0x009a200a;  // exposure
     ext_control.value64 = exposure;
     if (-1 == xioctl(fd, VIDIOC_S_EXT_CTRLS, &ext_controls)) {
         errno_exit("VIDIOC_S_CTRL exposure");
@@ -526,7 +524,7 @@ init_device(void) {
 
     CLEAR(control);
     control.id = 0x009a206d;  // low_latency_mode
-    control.value = 0;
+    control.value = 1;
     if (-1 == xioctl(fd, VIDIOC_S_CTRL, &control)) {
         errno_exit("VIDIOC_S_CTRL low latency mode");
     }
@@ -543,7 +541,7 @@ init_device(void) {
         errno_exit("VIDIOC_S_CTRL gain");
     }
 
-    ext_control.id = 0x009a2001;  // coarse exposure
+    ext_control.id = 0x009a200a;  // exposure
     ext_control.value64 = OV9281_DEFAULT_EXPOSURE_COARSE;
     if (-1 == xioctl(fd, VIDIOC_S_EXT_CTRLS, &ext_controls)) {
         errno_exit("VIDIOC_S_CTRL exposure");
@@ -574,15 +572,6 @@ init_device(void) {
         fmt.fmt.pix.sizeimage = min;
 
     init_userp(fmt.fmt.pix.sizeimage);
-
-    // Create stream for detection
-    cudaStreamCreate(&main_stream);
-
-    // Allocate the output vector to contain detected AprilTags.
-    input_image.width = width;
-    input_image.height = height;
-    input_image.pitch = 3;  // not sure
-    // set input_image.dev_ptr to buffer before detecting
 }
 
 static void
@@ -620,9 +609,12 @@ open_device(void) {
 
 static void
 init_cuda(void) {
+    // Create stream for detection
+    cudaStreamCreate(&main_stream);
+
     // 971 detector
     gpu_detector_ = new frc971::apriltag::GpuDetector(width, height, MakeTagDetector(tag36h11_create()), create_camera_matrix(),
-                      create_distortion_coefficients());
+                      create_distortion_coefficients(), cudaDecimate);
 
     /* Check unified memory support. */
     cudaDeviceProp devProp;
@@ -647,19 +639,19 @@ void print_pose3d(frc::Pose3d pos, std::string description) {
 static void
 init_wpilib(void) {
     std::cout << "Setting up NetworkTables client for team " << team << std::endl;
-    ntinst.StartClient4("ov9281");
+    ntinst.StartClient4("ov9281" + std::to_string(port_num));
     ntinst.SetServerTeam(team);
 
     auto table = ntinst.GetTable("CameraPublisher");
     
-    std::string mjpgstream[] = {"http://10.41.43.48:1181/stream.mjpg"};
+    std::string mjpgstream[] = {"http://10.41.43.48:" + std::to_string(port_num) + "/stream.mjpg"};
     table->PutStringArray("Jetson/streams", std::span{mjpgstream});
 
     mjpeg_server->SetSource(cvsource);
     CS_Status status = 0;
     cs::AddListener(
         [&](const cs::RawEvent &event) {
-            fmt::print("FPS={} MBPS={}\n", cvsource.GetActualFPS(),
+            fmt::print("mjpgserver FPS={} MBPS={}\n", cvsource.GetActualFPS(),
                        (cvsource.GetActualDataRate() / 1000000.0));
         },
         cs::RawEvent::kTelemetryUpdated, false, &status);
@@ -675,18 +667,6 @@ init_wpilib(void) {
                 setexposure(event.value);
         },
         cs::RawEvent::kSourcePropertyValueUpdated, false, &status);
-        
-    intrinsicMat.at<double>(0, 0) = cam_intrinsics.fx;
-    intrinsicMat.at<double>(1, 0) = 0;
-    intrinsicMat.at<double>(2, 0) = 0;
-
-    intrinsicMat.at<double>(0, 1) = 0;
-    intrinsicMat.at<double>(1, 1) = cam_intrinsics.fy;
-    intrinsicMat.at<double>(2, 1) = 0;
-
-    intrinsicMat.at<double>(0, 2) = cam_intrinsics.cx;
-    intrinsicMat.at<double>(1, 2) = cam_intrinsics.cy;
-    intrinsicMat.at<double>(2, 2) = 1;
 }
 
 static void

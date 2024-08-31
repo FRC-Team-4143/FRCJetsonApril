@@ -796,7 +796,7 @@ setexposure(int exposure) {
     ext_controls.count = 1;
     ext_controls.controls = &ext_control;
 
-    ext_control.id = 0x009a2001;  // coarse exposure
+    ext_control.id = 0x009a200a;  // exposure
     ext_control.value64 = exposure;
     if (-1 == xioctl(fd, VIDIOC_S_EXT_CTRLS, &ext_controls)) {
         errno_exit("VIDIOC_S_CTRL exposure");
@@ -845,7 +845,7 @@ init_device(void) {
 
     CLEAR(control);
     control.id = 0x009a206d;  // low_latency_mode
-    control.value = 0;
+    control.value = 1;
     if (-1 == xioctl(fd, VIDIOC_S_CTRL, &control)) {
         errno_exit("VIDIOC_S_CTRL low latency mode");
     }
@@ -877,14 +877,7 @@ init_device(void) {
         errno_exit("VIDIOC_S_CTRL gain");
     }
 
-    // ext_control.id = 0x009a200a; // exposure
-    // ext_control.value64 = 0x10;
-    // ext_control.value64 = 0;
-    // if (-1 == xioctl (fd, VIDIOC_S_EXT_CTRLS, &ext_controls)) {
-    //     errno_exit ("VIDIOC_S_CTRL exposure");
-    // }
-
-    ext_control.id = 0x009a2001;  // coarse exposure
+    ext_control.id = 0x009a200a;  // exposure
     ext_control.value64 = OV9281_DEFAULT_EXPOSURE_COARSE;
     if (-1 == xioctl(fd, VIDIOC_S_EXT_CTRLS, &ext_controls)) {
         errno_exit("VIDIOC_S_CTRL exposure");

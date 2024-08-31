@@ -516,7 +516,7 @@ init_device                     (void)
 
     CLEAR(control);
     control.id = 0x009a206d; // low_latency_mode
-    control.value = 0;
+    control.value = 1;
     if (-1 == xioctl (fd, VIDIOC_S_CTRL, &control)) {
         errno_exit ("VIDIOC_S_CTRL low latency mode");
     }
