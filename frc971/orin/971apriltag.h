@@ -81,6 +81,9 @@ class GpuDetector {
   // with and height, using the provided detector options.
   GpuDetector(size_t width, size_t height, apriltag_detector_t *tag_detector,
               CameraMatrix camera_matrix, DistCoeffs distortion_coefficients);
+  GpuDetector(size_t width, size_t height, apriltag_detector_t *tag_detector,
+              CameraMatrix camera_matrix, DistCoeffs distortion_coefficients,
+	      size_t decimate);
   virtual ~GpuDetector();
 
   // Detects april tags in the provided image.
@@ -232,6 +235,8 @@ class GpuDetector {
   // Size of the image.
   const size_t width_;
   const size_t height_;
+
+  const size_t decimate_;
 
   // Detector parameters.
   apriltag_detector_t *tag_detector_;

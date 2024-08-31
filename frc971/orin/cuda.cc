@@ -1,12 +1,5 @@
 #include "frc971/orin/cuda.h"
 
-//#include "absl/flags/flag.h"
-//#include "absl/log/check.h"
-
-//ABSL_FLAG(
-//    bool, sync, false,
-//    "If true, force synchronization after each step to isolate errors better.");
-
 namespace frc971::apriltag {
 
 size_t overall_memory = 0;

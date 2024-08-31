@@ -16,16 +16,10 @@
 */
 #include <vector>
 
-//#include "absl/flags/flag.h"
-//#include "absl/log/check.h"
-//#include "absl/log/log.h"
-
-//#include "aos/time/time.h"
 #include "frc971/orin/971apriltag.h"
 #include "frc971/orin/labeling_allegretti_2019_BKE.h"
 #include "frc971/orin/threshold.h"
 
-//ABSL_FLAG(int32_t, debug_blob_index, 4096, "Blob to print out for");
 
 constexpr int kUndistortIterationThreshold = 100;
 constexpr double kUndistortConvergenceEpsilon = 1e-6;

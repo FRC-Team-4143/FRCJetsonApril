@@ -113,6 +113,7 @@ GpuDetector::GpuDetector(size_t width, size_t height,
                          DistCoeffs distortion_coefficients)
     : width_(width),
       height_(height),
+      decimate_(2),
       tag_detector_(tag_detector),
       //color_image_host_(width * height * 2),
       gray_image_host_(width * height),
@@ -167,6 +168,94 @@ GpuDetector::GpuDetector(size_t width, size_t height,
   quad_corners_host_.reserve(kMaxBlobs);
 
   CHECK_EQ(tag_detector_->quad_decimate, 2);
+  CHECK(!tag_detector_->qtp.deglitch);
+
+  for (int i = 0; i < zarray_size(tag_detector_->tag_families); i++) {
+    apriltag_family_t *family;
+    zarray_get(tag_detector_->tag_families, i, &family);
+    if (family->width_at_border < min_tag_width_) {
+      min_tag_width_ = family->width_at_border;
+    }
+    normal_border_ |= !family->reversed_border;
+    reversed_border_ |= family->reversed_border;
+  }
+  min_tag_width_ /= tag_detector_->quad_decimate;
+  if (min_tag_width_ < 3) {
+    min_tag_width_ = 3;
+  }
+
+  poly0_ = g2d_polygon_create_zeros(4);
+  poly1_ = g2d_polygon_create_zeros(4);
+
+  detections_ = zarray_create(sizeof(apriltag_detection_t *));
+  zarray_ensure_capacity(detections_, kMaxBlobs);
+}
+
+// decimate can be 1 or 2
+GpuDetector::GpuDetector(size_t width, size_t height,
+                         apriltag_detector_t *tag_detector,
+                         CameraMatrix camera_matrix,
+                         DistCoeffs distortion_coefficients,
+			 size_t decimate)
+    : width_(width),
+      height_(height),
+      decimate_(decimate),
+      tag_detector_(tag_detector),
+      //color_image_host_(width * height * 2),
+      gray_image_host_(width * height),
+      color_image_device_(width * height * 2),
+      gray_image_device_(width * height),
+      decimated_image_device_(width / decimate * height / decimate),
+      unfiltered_minmax_image_device_((width / decimate / 4 * height / decimate / 4) * 2),
+      minmax_image_device_((width / decimate / 4 * height / decimate / 4) * 2),
+      thresholded_image_device_(width / decimate * height / decimate),
+      union_markers_device_(width / decimate * height / decimate),
+      union_markers_size_device_(width / decimate * height / decimate),
+      union_marker_pair_device_((width / decimate - 2) * (height / decimate - 2) * 4),
+      compressed_union_marker_pair_device_(union_marker_pair_device_.size()),
+      sorted_union_marker_pair_device_(union_marker_pair_device_.size()),
+      extents_device_(union_marker_pair_device_.size()),
+      selected_extents_device_(kMaxBlobs),
+      selected_blobs_device_(union_marker_pair_device_.size()),
+      sorted_selected_blobs_device_(selected_blobs_device_.size()),
+      line_fit_points_device_(selected_blobs_device_.size()),
+      errs_device_(line_fit_points_device_.size()),
+      filtered_errs_device_(line_fit_points_device_.size()),
+      filtered_is_local_peak_device_(line_fit_points_device_.size()),
+      compressed_peaks_device_(line_fit_points_device_.size()),
+      sorted_compressed_peaks_device_(line_fit_points_device_.size()),
+      peak_extents_device_(kMaxBlobs),
+      camera_matrix_(camera_matrix),
+      distortion_coefficients_(distortion_coefficients),
+      fit_quads_device_(kMaxBlobs),
+      radix_sort_tmpstorage_device_(RadixSortScratchSpace<QuadBoundaryPoint>(
+          sorted_union_marker_pair_device_.size())),
+      temp_storage_compressed_union_marker_pair_device_(
+          DeviceSelectIfScratchSpace<QuadBoundaryPoint, QuadBoundaryPoint>(
+              union_marker_pair_device_.size(),
+              num_compressed_union_marker_pair_device_.get())),
+      temp_storage_bounds_reduce_by_key_device_(
+          DeviceReduceByKeyScratchSpace<uint64_t, MinMaxExtents>(
+              union_marker_pair_device_.size())),
+      temp_storage_dot_product_device_(
+          DeviceReduceByKeyScratchSpace<uint64_t, float>(
+              union_marker_pair_device_.size())),
+      temp_storage_compressed_filtered_blobs_device_(
+          DeviceSelectIfScratchSpace<IndexPoint, IndexPoint>(
+              union_marker_pair_device_.size(),
+              num_selected_blobs_device_.get())),
+      temp_storage_selected_extents_scan_device_(
+          DeviceScanInclusiveScanScratchSpace<
+              cub::KeyValuePair<long, MinMaxExtents>>(kMaxBlobs)),
+      temp_storage_line_fit_scan_device_(
+          DeviceScanInclusiveScanByKeyScratchSpace<uint32_t, LineFitPoint>(
+              sorted_selected_blobs_device_.size())) {
+  fit_quads_host_.reserve(kMaxBlobs);
+  quad_corners_host_.reserve(kMaxBlobs);
+
+  CHECK(decimate_ == 1 || decimate_ == 2);
+
+  CHECK_EQ(tag_detector_->quad_decimate, decimate_);
   CHECK(!tag_detector_->qtp.deglitch);
 
   for (int i = 0; i < zarray_size(tag_detector_->tag_families); i++) {
@@ -572,11 +661,11 @@ struct TransformLineFitPoint {
 
     // we now undo our fixed-point arithmetic.
     // adjust for pixel center bias
-    constexpr int delta = 1;
+    int delta = decimate - 1; //1;  // not sure RJS
     int32_t ix2 = p.x() + delta;
     int32_t iy2 = p.y() + delta;
-    int32_t ix = ix2 / 2;
-    int32_t iy = iy2 / 2;
+    int32_t ix = ix2 / decimate; //2;  // not sure RJS
+    int32_t iy = iy2 / decimate; //2;
 
     int32_t W = 1;
 
@@ -606,6 +695,7 @@ struct TransformLineFitPoint {
   const uint8_t *decimated_image_device_;
   int decimated_width;
   int decimated_height;
+  int decimate;
 };
 
 struct SumLineFitPoints {
@@ -665,6 +755,7 @@ void GpuDetector::DetectColor(const uint8_t *image) {
   color_image_device_.MemcpyAsyncFrom(image, &stream_);
   after_image_memcpy_to_device_.Record(&stream_);
 
+  CHECK(decimate_ == 2);
   // Threshold the image.
   CudaToGreyscaleAndDecimate(
       color_image_device_.get(), gray_image_device_.get(),
@@ -688,12 +779,21 @@ void GpuDetector::DetectGray(uint8_t *image) {
   after_image_memcpy_to_device_.Record(&stream_);
 
   cudaStreamAttachMemAsync(stream_.get(), image, 0, cudaMemAttachGlobal);
-  CudaDecimate(
+  if(decimate_ == 2) {
+      CudaDecimate(
       image,
       decimated_image_device_.get(), unfiltered_minmax_image_device_.get(),
       minmax_image_device_.get(), thresholded_image_device_.get(), width_,
       height_, tag_detector_->qtp.min_white_black_diff, &stream_);
-  after_threshold_.Record(&stream_);
+      after_threshold_.Record(&stream_);
+  } else if(decimate_ == 1) {
+      CudaNoDecimate(
+      image,
+      decimated_image_device_.get(), unfiltered_minmax_image_device_.get(),
+      minmax_image_device_.get(), thresholded_image_device_.get(), width_,
+      height_, tag_detector_->qtp.min_white_black_diff, &stream_);
+      after_threshold_.Record(&stream_);
+  } else CHECK(0);
 
   cudaStreamAttachMemAsync(stream_.get(), image, 0, cudaMemAttachHost);
 
@@ -717,8 +817,8 @@ void GpuDetector::DetectGray2(uint8_t *image) {
   CHECK((width_ % 8) == 0);
   CHECK((height_ % 8) == 0);
 
-  size_t decimated_width = width_ / 2;
-  size_t decimated_height = height_ / 2;
+  size_t decimated_width = width_ / decimate_;
+  size_t decimated_height = height_ / decimate_;
 
   // TODO(austin): Tune for the global shutter camera.
   // 1280 -> 2 * 128 * 5
@@ -831,7 +931,7 @@ void GpuDetector::DetectGray2(uint8_t *image) {
   //
   // Aprilrobotics has a *3 instead of a *2 here since they have duplicated
   // points in their list at this stage.
-  const size_t max_april_tag_perimeter = 2 * (width_ + height_);
+  const size_t max_april_tag_perimeter = 4 / decimate_ * (width_ + height_);
 
   {
     // Now that we have the dot products, we need to rewrite the extents for the
@@ -927,8 +1027,8 @@ void GpuDetector::DetectGray2(uint8_t *image) {
     //
     // Clear the size of non-passing extents and the starting offset of all
     // extents.
-    TransformLineFitPoint rewrite(decimated_image_device_.get(), width_ / 2,
-                                  height_ / 2);
+    TransformLineFitPoint rewrite(decimated_image_device_.get(), width_ / decimate_,
+                                  height_ / decimate_, decimate_);
     cub::TransformInputIterator<LineFitPoint, TransformLineFitPoint,
                                 IndexPoint *>
         input_iterator(sorted_selected_blobs_device_.get(), rewrite);

@@ -67,6 +67,18 @@ __global__ void InternalCudaDecimate(
   // bandwidth consumed...
 }
 
+// just copies  - get rid of later if better
+__global__ void InternalCudaNoDecimate(
+    const uint8_t *gray_image, uint8_t *decimated_image,
+    size_t width, size_t height) {
+  size_t i = blockIdx.x * blockDim.x + threadIdx.x;
+  while (i < width * height) {
+    uint8_t pixel = gray_image[i];
+    decimated_image[i] = pixel;
+    i += blockDim.x * gridDim.x;
+  }
+}
+
 // Returns the min and max for a row of 4 pixels.
 __forceinline__ __device__ uchar2 minmax(uchar4 row) {
   uint8_t min_val = std::min(std::min(row.x, row.y), std::min(row.z, row.w));
@@ -237,7 +249,7 @@ void CudaDecimate(
   CHECK((height % 8) == 0);
   constexpr size_t kThreads = 256;
   {
-    // Step one, convert to gray and decimate.
+    // Step one, decimate.
     size_t kBlocks = (width * height + kThreads - 1) / kThreads / 4;
     InternalCudaDecimate<<<kBlocks, kThreads, 0,
                                                stream->get()>>>(
@@ -272,6 +284,58 @@ void CudaDecimate(
     // Now, write out 127 if the min/max are too close to each other, or 0/255
     // if the pixels are above or below the average of the min/max.
     size_t kBlocks = (width * height / 4 + kThreads - 1) / kThreads / 4;
+    InternalThreshold<<<kBlocks, kThreads, 0, stream->get()>>>(
+        decimated_image, reinterpret_cast<uchar2 *>(minmax_image),
+        thresholded_image, decimated_width, decimated_height,
+        min_white_black_diff);
+    MaybeCheckAndSynchronize();
+  }
+}
+
+void CudaNoDecimate(
+    const uint8_t *gray_image, uint8_t *decimated_image,
+    uint8_t *unfiltered_minmax_image, uint8_t *minmax_image,
+    uint8_t *thresholded_image, size_t width, size_t height,
+    size_t min_white_black_diff, CudaStream *stream) {
+  CHECK((width % 8) == 0);
+  CHECK((height % 8) == 0);
+  constexpr size_t kThreads = 256;
+  {
+    // Step one, nop.
+    size_t kBlocks = (width * height + kThreads - 1) / kThreads /*/ 4*/;
+    InternalCudaNoDecimate<<<kBlocks, kThreads, 0,
+                                               stream->get()>>>(
+        gray_image, decimated_image, width, height);
+    MaybeCheckAndSynchronize();
+  }
+
+  size_t decimated_width = width; // / 2;
+  size_t decimated_height = height; // / 2;
+
+  {
+    // Step 2, compute a min/max for each block of 4x4 (16) pixels.
+    dim3 threads(16, 16, 1);
+    dim3 blocks((decimated_width / 4 + 15) / 16,
+                (decimated_height / 4 + 15) / 16, 1);
+
+    InternalBlockMinMax<<<blocks, threads, 0, stream->get()>>>(
+        decimated_image, reinterpret_cast<uchar2 *>(unfiltered_minmax_image),
+        decimated_width / 4, decimated_height / 4);
+    MaybeCheckAndSynchronize();
+
+    // Step 3, Blur those min/max's a further +- 1 block in each direction using
+    // min/max.
+    InternalBlockFilter<<<blocks, threads, 0, stream->get()>>>(
+        reinterpret_cast<uchar2 *>(unfiltered_minmax_image),
+        reinterpret_cast<uchar2 *>(minmax_image), decimated_width / 4,
+        decimated_height / 4);
+    MaybeCheckAndSynchronize();
+  }
+
+  {
+    // Now, write out 127 if the min/max are too close to each other, or 0/255
+    // if the pixels are above or below the average of the min/max.
+    size_t kBlocks = (decimated_width * decimated_height + kThreads - 1) / kThreads / 4;
     InternalThreshold<<<kBlocks, kThreads, 0, stream->get()>>>(
         decimated_image, reinterpret_cast<uchar2 *>(minmax_image),
         thresholded_image, decimated_width, decimated_height,

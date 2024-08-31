@@ -166,7 +166,7 @@ std::ostream &operator<<(std::ostream &os, const QuadBoundaryPoint &point);
 // The blob index is 12 bits, the angle is 28 bits, and the point is 24 bits.
 struct IndexPoint {
   // Max number of blob IDs we can hold.
-  static constexpr size_t kMaxBlobs = 2048;
+  static constexpr size_t kMaxBlobs = 4096; //2048; RJS
 
   static constexpr size_t kRepEndBit = 24;
   static constexpr size_t kBitsInKey = 64;
