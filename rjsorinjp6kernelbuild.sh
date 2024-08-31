@@ -18,3 +18,5 @@ sudo make modules_install
 sudo cp nvidia-oot/device-tree/platform/generic-dts/dtbs/* /boot
 sudo nv-update-initrd
 
+# to package new kernel
+#tar cf 4143kernel.tar /lib/modules/5.15.136-tegra4143/ /boot/*4143* /boot/*ov9281* /boot/extlinux/extlinux.conf /boot/initrd.img
